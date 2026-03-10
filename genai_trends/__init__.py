@@ -1,0 +1,2 @@
+"""genAI trends dashboard package."""
+

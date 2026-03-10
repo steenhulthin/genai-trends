@@ -472,3 +472,37 @@ Right now just add to both topics. In real life topics overlap anywa.
 Updated the project docs to allow overlapping topic membership. For the current version, if a tracked item fits more than one topic, agents should include it in each relevant topic rather than forcing a single assignment.
 
 That closes the last open product rule. The project docs are now specific enough for agents to scaffold the first implementation without material product guessing.
+
+# Context from my IDE setup:
+
+## Active file: technology-choices.md
+
+## Open tabs:
+- technology-choices.md: technology-choices.md
+- spec.md: spec.md
+- prompt.md: prompt.md
+- project-context.yml: project-context.yml
+- goals.md: goals.md
+
+## My request for Codex:
+Ok, is there anything else to be done before implementing? Otherwise please go ahead.
+
+There was nothing product-critical left to decide, so I went ahead and scaffolded the first implementation. The repo now has a Streamlit app in `app.py`, config/data helpers in `genai_trends/`, a dependency file in `requirements.txt`, and an updated `data-dictionary.md` that matches the CSV export schema. The app reads `project-context.yml` and `tracked-items.yml`, shows topic and tracked-item trend charts, supports CSV export for the filtered view, and makes `data-dictionary.md` downloadable from the UI.
+
+The current data layer is intentionally a deterministic sample-data scaffold, not live Bluesky/GDELT/Google Trends integration yet. That keeps the UI, config model, export shape, and failure-handling rules in place while leaving the collectors easy to swap in next. I was not able to run the app or automated checks here because Python execution is blocked in this environment, and `git status` is also blocked by the repository ownership safety check, so verification was a manual code pass only.
+
+# Context from my IDE setup:
+
+## Active file: app.py
+
+## Open tabs:
+- app.py: app.py
+- launch.json: .vscode/launch.json
+- SKILL.md: skills/task-decomposition/SKILL.md
+- SKILL.md: skills/implementation-defaults/SKILL.md
+- requirements.txt: requirements.txt
+
+## My request for Codex:
+add a appropriate .gitignore file
+
+Added a root `.gitignore` with sensible defaults for this Python/Streamlit project, including Python caches, virtual environments, build artifacts, local Streamlit secrets, OS/editor noise, and temp files. I also kept `.vscode/launch.json` tracked while ignoring other `.vscode` files.
