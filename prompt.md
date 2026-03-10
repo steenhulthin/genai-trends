@@ -955,3 +955,26 @@ A UX/UI-focused agent is justified now. The product has moved past generic clean
 I updated `spec.md`, `goals.md`, `technology-choices.md`, and `project-context.yml` so they now require a clear `topic -> tracked item -> signal detail` hierarchy, prohibit raw tables in the primary UI, prefer charts/cards/structured lists, and define the interface tone as cheerful, nerdy, and welcoming to software developers. I also added the decision note that a UX/UI-focused agent is appropriate for the next interface pass.
 
 This was a scaffolding update only. I did not change the app UI in this pass.
+
+# Context from my IDE setup:
+
+## Active file: .streamlit/secrets.toml.example
+
+## Open tabs:
+- secrets.toml.example: .streamlit/secrets.toml.example
+- spec.md: spec.md
+- technology-choices.md: technology-choices.md
+- prompt.md: prompt.md
+- goals.md: goals.md
+
+## My request for Codex:
+Looks good. Go ahead with the implementation
+I’m moving from spec updates into the actual Streamlit UI now. First I’m reviewing the current app structure and tracked-item shape so I can replace the table-heavy layout with a hierarchy-first view without changing the data model.
+I’ve got the current layout. I’m replacing the on-screen dataframes with a hierarchy-first dashboard: topic summary, tracked-item cards with mini narratives, and source summaries, plus a more intentional visual layer.
+I’m making the UX requirements precise enough to guide implementation: explicit topic-to-word hierarchy, chart/list-first presentation, no on-screen tables, and a concrete visual tone. I’ll also add a workflow note about when a UX/UI specialist agent is worth using.
+I’m editing the main app file now. The new layout keeps the existing data flow but replaces the table UI with a topic hero, source summaries, and tracked-item cards that make the hierarchy obvious.
+The layout rewrite is in. I’m doing a static review now for UI-only regressions: no raw tables left on screen, hierarchy rendered directly from topic data, and charts guarded for empty states.
+I found a couple of edge cases in the new layout. I’m adding empty-state guards now so the hierarchy view and charts don’t assume the selected topic has data in every load.
+Implemented the hierarchy-first UI in `app.py`. The dashboard now opens with a styled topic hero, visible tracked-item chips under the selected topic, chart-based summaries, source readout cards, and per-item detail cards instead of on-screen tables. CSV and data dictionary downloads are still there, but the raw dataframe views are gone.
+
+I only did a static verification pass here. I confirmed the table widgets were removed from the UI code and added empty-state guards for charts and item cards, but I could not run the app in this workspace because there is still no runnable Python interpreter exposed.
