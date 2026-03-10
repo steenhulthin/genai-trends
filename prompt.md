@@ -102,3 +102,16 @@ This gives you high autonomy without turning the repo into an uncontrolled retry
 Implemented the scaffolding. `AGENTS.md` now stays at the repo-policy level and defines the default `planner -> executor -> verifier` model, low gating, skill-first specialization, and a one-retry verification cap. I added role-specific instruction files in `agents/planner/AGENTS.md`, `agents/executor/AGENTS.md`, and `agents/verifier/AGENTS.md`, plus three repo-local skills in `skills/task-decomposition`, `skills/implementation-defaults`, and `skills/verification-gate`.
 
 Verification was manual: I reread the root rules, role handoff files, and skill definitions, and I scanned the new scaffolding outside `prompt.md` for accidental environment leakage. I could not use the external skill initializer or validator because direct Python execution is blocked here, so the skill structure and metadata were created and checked by hand.
+
+# Context from my IDE setup:
+
+## Open tabs:
+- prompt.md: prompt.md
+- AGENTS.md: AGENTS.md
+
+## My request for Codex:
+I would like to write the goals and specifications in a file so I (and agents) can read them at any time. Create these files. 
+I also have some fixed technology choices that I would like to specify in a file. 
+These files do not need to append - git will handle any changes to these files.
+
+Created three persistent project files: [goals.md](goals.md) for product goals and success criteria, [spec.md](spec.md) for implementation-facing requirements and interfaces, and [technology-choices.md](technology-choices.md) for fixed and preferred stack decisions. They are structured as editable templates and are separate from the append-only `prompt.md` log.
