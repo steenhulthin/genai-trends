@@ -16,9 +16,9 @@
   - news mentions: second priority
   - Google Trends: third priority
 - The first implementation must use:
-  - `Bluesky` for social media
-  - `GDELT` for news mentions
-  - `Google Trends` for search-interest data
+  - `Reddit API` for social media
+  - `Guardian Open Platform` for news mentions
+  - `SerpApi` for Google Trends search-interest data
 - The dashboard must show both:
   - source-specific frequency values
   - a composite popularity score
@@ -85,3 +85,5 @@
 
 - Evaluate Mastodon later as an additional social-data source.
 - Evaluate Hacker News later as an additional news or discussion-oriented signal source.
+- Evaluate `GDELT Web NGrams 3.0` later if the project needs a higher-scale news pipeline.
+- Evaluate `DataForSEO` later as an alternative Google Trends provider.

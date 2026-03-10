@@ -716,3 +716,124 @@ KeyError: "Attempt to overwrite 'message' in LogRecord"
 The repo already has the fix in place: the structured fetch field is `detail`, not `message`, and there are no remaining `extra["message"]` writes. I also checked the logging formatter, and its own `message` field is only part of the emitted JSON, not the `extra` payload that caused the crash.
 
 This means the traceback is from an older copy of `genai_trends/data.py` than what is currently in the workspace. Restart the Streamlit process and rerun once so it loads the current code. If the same error still appears after a full restart, send the current contents of `genai_trends/data.py` around `FetchMetric` and `_metric`, because the running file and the repo file would then be out of sync.
+
+# Context from my IDE setup:
+
+## Active file: genai_trends/data.py
+
+## Open tabs:
+- data.py: genai_trends/data.py
+- prompt.md: prompt.md
+- data-dictionary.md: data-dictionary.md
+- app.py: app.py
+- AGENTS.md: AGENTS.md
+
+## My request for Codex:
+Go through the log files and suggest 3-5 solutions. Other APIs might be better suited for the dashboard.
+
+I went through the current logs and the pattern is clear:
+
+- `Bluesky` is failing immediately with `403`, then the rest of that source is skipped.
+- `GDELT` is explicitly rate-limiting you. The response body says to limit requests to `one every 5 seconds`.
+- `pytrends` is returning `429` on the first batch, so Google Trends is not viable here as an interactive live-fetch source in its current form.
+- The dashboard does render after the early-stop logic kicks in, but it still renders in a degraded state with throttling warnings.
+
+The best options are:
+
+1. Keep `Bluesky`, but stop using per-term `searchPosts` as the main social signal.
+   - Best fit if you want to stay close to your original product idea.
+   - Use authenticated Bluesky access or, better, ingest from `Jetstream` and build your own rolling counts.
+   - Why: the Bluesky docs explicitly note that some `app.bsky.*` endpoints may require authentication depending on provider/implementation, and your current logs show `403` on the public search endpoint.
+
+2. Replace the social source for v1 with `Reddit`.
+   - Best fit if you want a simpler and more stable “social mentions” source quickly.
+   - Why: Reddit has an official API and documented free-tier limits, while your current Bluesky path is blocked.
+   - Tradeoff: it is a different social signal than Bluesky, but it is likely easier to operationalize for a dashboard.
+
+3. Replace live `GDELT DOC` calls with `GDELT Web NGrams 3.0` ingestion.
+   - Best fit if you want to keep GDELT’s breadth without interactive API throttling.
+   - Why: GDELT explicitly recommends Web NGrams for higher-volume querying when DOC/Context APIs are rate-limited.
+   - Tradeoff: this is more of a small data pipeline than a direct request/response API call.
+
+4. Replace `pytrends` with a more reliable Google Trends source.
+   - Best fit if search-interest data matters enough to justify either vendor dependence or early-access enrollment.
+   - Options:
+     - official `Google Trends API alpha` if you can get accepted
+     - `SerpApi` if you want a managed hosted API with caching
+     - `DataForSEO` if you want a more industrial batch-oriented API
+   - Why: your current `pytrends` path is already rate-limited in the first request batch, so it is not stable enough for dashboard page-load fetching.
+
+5. Change the architecture: prefetch and cache all source data on a schedule, and make the dashboard read only cached data.
+   - Best fit regardless of which APIs you choose.
+   - Why: even with better APIs, dashboard page-load fetching is the wrong shape for this product. Trend data should be collected on a schedule and served from local cached snapshots.
+   - This is the strongest structural fix.
+
+My recommendation order:
+
+1. adopt scheduled ingestion + cache as the default architecture
+2. switch social from public Bluesky search to either `Jetstream` or `Reddit`
+3. switch news from live `GDELT DOC` calls to `Web NGrams 3.0` or a lower-volume official news API like `Guardian Open Platform`
+4. replace `pytrends` with either `Google Trends API alpha`, `SerpApi`, or `DataForSEO`
+
+If you want the most pragmatic v1 stack, I would choose:
+
+- social: `Reddit API`
+- news: `Guardian Open Platform` for simplicity or `GDELT Web NGrams 3.0` for scale
+- search interest: `SerpApi` or `DataForSEO`
+- architecture: scheduled collector + cached dataset served by the dashboard
+
+If you want to stay closest to the original source priorities, I would choose:
+
+- social: `Bluesky Jetstream`
+- news: `GDELT Web NGrams 3.0`
+- search interest: official `Google Trends API alpha` if you can get access, otherwise `SerpApi`
+
+Sources:
+- Bluesky search endpoint and host/auth guidance: https://docs.bsky.app/docs/api/app-bsky-feed-search-posts , https://docs.bsky.app/docs/advanced-guides/api-directory
+- Bluesky Jetstream: https://docs.bsky.app/blog/jetstream , https://github.com/bluesky-social/jetstream
+- GDELT rate-limit guidance and Web NGrams recommendation: https://blog.gdeltproject.org/ukraine-api-rate-limiting-web-ngrams-3-0/ , https://blog.gdeltproject.org/announcing-the-new-web-news-ngrams-3-0-dataset/
+- Google Trends API alpha: https://developers.google.com/search/apis/trends , https://developers.google.com/search/blog/2025/07/trends-api
+- SerpApi Google Trends: https://serpapi.com/google-trends-api
+- DataForSEO Google Trends: https://dataforseo.com/apis/dataforseo-trends-api , https://dataforseo.com/help-center/google-trends-api-limits-and-restrictions
+- Reddit API limits: https://redditinc.com/news/apifacts
+- Guardian Open Platform: https://open-platform.theguardian.com/access
+
+# Context from my IDE setup:
+
+## Active file: genai_trends/data.py
+
+## Open tabs:
+- data.py: genai_trends/data.py
+- prompt.md: prompt.md
+- data-dictionary.md: data-dictionary.md
+- app.py: app.py
+- AGENTS.md: AGENTS.md
+
+## My request for Codex:
+Let's try:
+social: Reddit API
+news: Guardian Open Platform for simplicity or GDELT Web NGrams 3.0 for scale
+search interest: SerpApi or DataForSEO
+but no architecture changes for now. 
+
+Switched the live source layer to `Reddit API`, `Guardian Open Platform`, and `SerpApi` without changing the current page-load architecture. `genai_trends/data.py` now fetches Reddit via app-only OAuth, Guardian via the content API with polite pacing, and Google Trends via SerpApi batches. I also normalized the export schema to source-group columns, updated the UI/config/docs to match, removed `pytrends`, and added `.streamlit/secrets.toml.example` with the required keys.
+
+This is wired but not fully runnable without credentials. The app now looks for `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `GUARDIAN_API_KEY`, and `SERPAPI_API_KEY` in either environment variables or Streamlit secrets. I could not run the app here, so verification was a manual code pass only. `GDELT Web NGrams 3.0` and `DataForSEO` are kept as documented alternatives, but I did not wire them yet because you explicitly asked for no architecture changes.
+
+# Context from my IDE setup:
+
+## Active file: .streamlit/secrets.toml.example
+
+## Active selection of the file:
+genai-trends-dashboard
+## Open tabs:
+- secrets.toml.example: .streamlit/secrets.toml.example
+- data.py: genai_trends/data.py
+- prompt.md: prompt.md
+- data-dictionary.md: data-dictionary.md
+- app.py: app.py
+
+## My request for Codex:
+add a readme 
+
+Added a root `README.md` with the project overview, current provider stack, local run steps, required credentials, logging behavior, key configuration files, export schema, and current limitations. It is aligned with the current `Reddit + Guardian + SerpApi` setup and points to `.streamlit/secrets.toml.example` for credential setup.

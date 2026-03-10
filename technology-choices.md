@@ -5,8 +5,9 @@
 - Hosting targets may include GitHub Pages and `share.streamlit.io`.
 - The project may use static-site-friendly technologies such as `stlite`, `shinylive`, WebAssembly-based approaches, or other true static site technologies if performance is acceptable.
 - A Streamlit deployment on `share.streamlit.io` is allowed.
-- The first social-data provider is `Bluesky`.
-- The first news-data provider is `GDELT`.
+- The first social-data provider is `Reddit API`.
+- The first news-data provider is `Guardian Open Platform`.
+- The first Google Trends provider is `SerpApi`.
 - The first export format is `CSV`.
 - The project must include a downloadable `data-dictionary.md`.
 - The initial composite weights are `social=0.5`, `news=0.3`, and `google_trends=0.2`.
@@ -35,6 +36,8 @@
 - Client-side or static-friendly fetching remains a soft preference when it does not complicate delivery.
 - Revisit `Mastodon` later as an additional social source.
 - Revisit `Hacker News` later as an additional signal source.
+- Revisit `GDELT Web NGrams 3.0` later if the project needs more news scale than the Guardian API provides.
+- Revisit `DataForSEO` later as an alternative Google Trends provider.
 
 ## Seed Topic Option
 

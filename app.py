@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 
 from genai_trends.config import load_project_context, load_tracked_items
-from genai_trends.data import build_export_frame, build_topic_summary, generate_dataset
+from genai_trends.data import SOURCE_FIELD_MAP, build_export_frame, build_topic_summary, generate_dataset
 from genai_trends.logging_utils import get_logger
 
 
@@ -53,9 +53,9 @@ default_start = today - timedelta(days=6)
 
 st.title("genAI Trends Dashboard")
 st.caption(
-    "Config-driven dashboard for topic trends across Bluesky, GDELT, and Google Trends. "
-    "Bluesky uses public search results, GDELT uses the DOC timeline API, and Google Trends uses "
-    "an unofficial client backend that can occasionally rate-limit or change."
+    "Config-driven dashboard for topic trends across Reddit, Guardian Open Platform, and Google Trends. "
+    "The current implementation uses Reddit app-only OAuth, the Guardian content API, and SerpApi "
+    "for Google Trends."
 )
 
 with st.sidebar:
@@ -178,8 +178,9 @@ st.line_chart(tracked_item_chart, width="stretch")
 source_cols = st.columns(3)
 for index, source_key in enumerate(context["data_sources"]["priority_order"]):
     source_name = selected_sources[source_key]
-    source_frame = filtered[["period_end", "tracked_item", f"{source_name}_frequency"]].rename(
-        columns={f"{source_name}_frequency": "source_frequency"}
+    source_field = SOURCE_FIELD_MAP[source_key]
+    source_frame = filtered[["period_end", "tracked_item", f"{source_field}_frequency"]].rename(
+        columns={f"{source_field}_frequency": "source_frequency"}
     )
     with source_cols[index]:
         st.markdown(f"**{source_name.replace('_', ' ').title()}**")
@@ -217,7 +218,7 @@ with dictionary_col:
         "- Composite score uses configurable source weights.\n"
         "- If one source is missing, the app keeps remaining data and warns.\n"
         "- The export includes the currently selected topic and period only.\n"
-        "- Bluesky counts come from public search results and should be treated as an approximation.\n"
+        "- Live providers currently require external API credentials for fully populated results.\n"
         "- Detailed runtime instrumentation is written to the log files."
     )
 

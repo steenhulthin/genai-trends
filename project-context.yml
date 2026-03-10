@@ -31,9 +31,14 @@ data_sources:
     - google_trends
   grouping_required: true
   selected:
-    social_media: bluesky
-    news_mentions: gdelt
-    google_trends: google_trends
+    social_media: reddit
+    news_mentions: guardian
+    google_trends: serpapi
+  alternatives:
+    news_mentions:
+      - gdelt_web_ngrams
+    google_trends:
+      - dataforseo
   deferred:
     - mastodon
     - hacker_news
