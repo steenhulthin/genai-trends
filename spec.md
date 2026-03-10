@@ -15,6 +15,10 @@
   - social media: highest priority
   - news mentions: second priority
   - Google Trends: third priority
+- The first implementation must use:
+  - `Bluesky` for social media
+  - `GDELT` for news mentions
+  - `Google Trends` for search-interest data
 - The dashboard must show both:
   - source-specific frequency values
   - a composite popularity score
@@ -23,6 +27,7 @@
   - select time granularity: daily, weekly, or monthly
   - select a time period for the displayed data
   - download the currently filtered data in a standard file format
+- The dashboard must allow users to download `data-dictionary.md`.
 - The default time granularity must be daily.
 - Data must be loaded when the dashboard page is loaded.
 - Data must be reloaded when the user changes filters or refreshes the browser.
@@ -53,7 +58,9 @@
 
 - Data inputs should come from open or freely available sources where practical.
 - The first implementation should organize data by source and topic before presenting composite scores.
-- Export output should use a standard format suitable for downstream analysis.
+- Export output should use `CSV` in the first version.
+- The project should include a `data-dictionary.md` file that documents export columns, meanings, and examples.
+- The UI should expose `data-dictionary.md` as a downloadable artifact.
 
 ## Validation
 
@@ -65,11 +72,15 @@
 
 - The initial topic set is enough for the first release.
 - Agents should treat the topic taxonomy as predefined, not inferred from the data.
+- Use tracked-item seed list option `A` as the first implementation set.
 
 ## Open Questions
 
-- Which exact source providers should be used for social media and news in the first version?
-- What default export format should the first version use?
 - What factor values should be used in the initial composite score?
 - Should source failures remove the source from the composite score dynamically, or should they produce a partial-data warning without recomputing weights?
+- Which exact tracked items from option `A` should be included in the initial seed list?
 
+## Deferred Options
+
+- Evaluate Mastodon later as an additional social-data source.
+- Evaluate Hacker News later as an additional news or discussion-oriented signal source.

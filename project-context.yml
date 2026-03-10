@@ -25,6 +25,13 @@ data_sources:
     - news_mentions
     - google_trends
   grouping_required: true
+  selected:
+    social_media: bluesky
+    news_mentions: gdelt
+    google_trends: google_trends
+  deferred:
+    - mastodon
+    - hacker_news
 
 metrics:
   source_specific:
@@ -53,6 +60,7 @@ user_capabilities:
   - granularity_filter
   - date_range_filter
   - data_export
+  - data_dictionary_download
 
 deployment:
   default_stack: streamlit
@@ -66,10 +74,19 @@ deployment:
   allowed_hosts:
     - github_pages
     - share_streamlit_io
+  fetching_preferences:
+    server_fetching_allowed: true
+    server_caching_allowed: true
+    soft_prefer_client_or_static_fetching: true
+
+export:
+  default_format: csv
+  documentation_file: data-dictionary.md
+  documentation_downloadable_in_ui: true
+
+seed_option:
+  tracked_items: A
 
 open_questions:
-  - Which exact providers should be used for social media data?
-  - Which exact providers should be used for news data?
-  - Which export format should be default in v1?
   - What factor values should be used for the composite score?
-
+  - Which exact tracked items from option A should be included in the initial seed list?

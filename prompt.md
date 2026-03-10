@@ -207,3 +207,213 @@ What is still not decision-complete for agents:
 6. What initial tracked items belong under each of the three topics? Without a seed list, agents can build the shell but not the actual trend coverage.
 
 Once you answer those, the agent work is concrete enough to scaffold the first implementation without guessing on important product decisions.
+
+# Context from my IDE setup:
+
+## Active file: project-context.yml
+
+## Open tabs:
+- project-context.yml: project-context.yml
+- openai.yaml: skills/implementation-defaults/agents/openai.yaml
+- SKILL.md: skills/task-decomposition/SKILL.md
+- spec.md: spec.md
+- prompt.md: prompt.md
+
+## My request for Codex:
+1. Suggest me 4-5 options to choose from. For each option include a rough estimate of number of user and an evaluation of how easily accessibel their API/data is.
+2. Suggest me 4-5 options to choose from. For each option include an evaluation of how easily accessibel their API/data is.
+3. Sounds good. Make sure it is easy to change later.
+4. CSV is fine. But present me with some option for documenting the format so the end user knows how to read and understand the data. 
+5. for streamlit using the server and caching is fine. Still "soft" prefer client/static fetching.
+6. Look up paper and company blog posts from the major model provider from the last 6 month and based on that present me with some options 
+
+
+1. Social-media source options
+
+- `Bluesky`
+  - Rough size: about `41.4M` users.
+  - API/data accessibility: `very high`.
+  - Why: Bluesky has open APIs, public endpoints, and a public cached endpoint. This is the easiest clean social source for a v1 trend collector.
+- `Reddit`
+  - Rough size: about `121M` daily active uniques and `471M` weekly active uniques.
+  - API/data accessibility: `medium-high`.
+  - Why: very strong topic conversations and keyword coverage. Public/community data is rich, but platform/private-user access is constrained.
+- `YouTube`
+  - Rough size: `billions` of monthly logged-in users; YouTube also reports `1B+` monthly viewers of podcast content.
+  - API/data accessibility: `medium`.
+  - Why: official API is good, but you need a project/API key and quota management. Strong for creator/content trend signals, weaker for fast conversational signals than Bluesky or Reddit.
+- `LinkedIn`
+  - Rough size: about `1.2B` members.
+  - API/data accessibility: `low`.
+  - Why: huge professional relevance, but most permissions require explicit approval. Better as a later validation/enrichment source than a v1 primary source.
+
+My recommendation for v1:
+- Primary: `Bluesky`
+- Secondary: `Reddit`
+- Optional third social signal: `YouTube`
+
+2. News-source options
+
+- `GDELT`
+  - API/data accessibility: `very high`.
+  - Why: open, trend-friendly, multilingual, and well suited for keyword-volume timelines. Best default news source for this project.
+- `The Guardian Open Platform`
+  - API/data accessibility: `high`.
+  - Why: clean official API, free non-commercial developer access, article text included, but limited daily quota.
+- `NewsAPI`
+  - API/data accessibility: `medium`.
+  - Why: very easy to use, but the free tier is only for development/testing, has a `24h` delay, and a small daily limit.
+- `mediastack`
+  - API/data accessibility: `medium-high`.
+  - Why: simple REST API, easy onboarding, broad source coverage. Good aggregator option, but still proprietary and free-tier constrained.
+
+My recommendation for v1:
+- Primary: `GDELT`
+- Secondary validation/backup: `The Guardian`
+
+3. Composite score
+
+Use your proposed starter weights:
+- `social=0.5`
+- `news=0.3`
+- `google_trends=0.2`
+
+Implementation advice:
+- keep the factors in one config object or YAML block, not hard-coded across the app
+- compute and store both raw source frequencies and the composite score
+- make missing-source handling explicit so the formula is easy to revise later
+
+4. Ways to document the CSV format
+
+- `data-dictionary.md` in the repo
+  - Best v1 choice.
+  - Define every column, units, allowed values, source meaning, and one worked example row.
+- In-app `About this data` panel
+  - Best for end users.
+  - Explain filters, update behavior, score formula, and export columns right next to the dashboard.
+- `csvw-metadata.json`
+  - Best standards-based option.
+  - This follows the W3C CSV on the Web approach and makes the CSV machine-readable as well as human-documented.
+- Example export file plus annotated sample
+  - Best for quick understanding.
+  - Ship one small example CSV and a matching explanation page.
+
+My recommendation for v1:
+- `data-dictionary.md` + in-app `About this data`
+- add `csvw-metadata.json` later if machine-readable metadata becomes useful
+
+5. Hosting/fetching decision
+
+I would treat this as:
+- `Streamlit server + caching`: allowed
+- `client/static fetching`: soft preference when it keeps the implementation simpler or cheaper
+
+That is implementable for agents.
+
+6. Tracked-item options based on recent major-provider release themes
+
+This is an inference from recent official posts by OpenAI, Anthropic, and Google. The strongest recurring themes in the last six months are: `coding agents`, `multi-agent workflows`, `computer use`, `deep research`, `reasoning/thinking models`, and `long-running agent tasks`.
+
+Option A: Agentic coding heavy
+- `prompt engineering`
+  - `system prompt`
+  - `tool use`
+  - `evals`
+  - `structured outputs`
+- `advanced software production with agents`
+  - `coding agent`
+  - `multi-agent`
+  - `worktrees`
+  - `MCP`
+  - `computer use`
+  - `background mode`
+- `general`
+  - `Codex`
+  - `Claude Sonnet 4.5`
+  - `Gemini 2.5`
+  - `Deep Research`
+
+Option B: Research and reasoning heavy
+- `prompt engineering`
+  - `planning prompt`
+  - `retrieval prompt`
+  - `evaluation prompt`
+- `advanced software production with agents`
+  - `reasoning model`
+  - `thinking model`
+  - `research agent`
+  - `long-running task`
+  - `tool loop`
+- `general`
+  - `long context`
+  - `1M context`
+  - `factuality`
+  - `hallucination reduction`
+
+Option C: UI/browser agent heavy
+- `prompt engineering`
+  - `stop condition`
+  - `retry loop`
+  - `browser tool prompt`
+- `advanced software production with agents`
+  - `computer use`
+  - `browser agent`
+  - `UI automation`
+  - `tool-calling`
+  - `agent loop`
+- `general`
+  - `Gemini Computer Use`
+  - `Claude computer use`
+  - `autonomous agent`
+
+My recommendation for v1:
+- choose `Option A`
+- then borrow `computer use` from Option C
+- and keep provider/model names in `general`
+
+That gives you a seed list that matches the current market language without being too broad.
+
+What I still need from you to make this fully implementation-ready:
+
+1. Pick one primary social source for v1: `Bluesky`, `Reddit`, or `YouTube`.
+2. Pick one primary news source for v1: `GDELT`, `Guardian`, `NewsAPI`, or `mediastack`.
+3. Pick one tracked-item option: `A`, `B`, `C`, or a hybrid.
+
+Sources:
+- Bluesky users and public API docs: https://bsky.social/about/blog/01-29-2026-transparency-report-2025 , https://docs.bsky.app/docs/advanced-guides/api-directory
+- Reddit scale and API docs: https://investor.redditinc.com/overview/default.aspx , https://developers.reddit.com/docs/capabilities/server/reddit-api
+- YouTube API and scale references: https://developers.google.com/youtube/v3/getting-started , https://blog.youtube/press , https://blog.youtube/news-and-events/1-billion-monthly-podcast-users/
+- LinkedIn scale and API access rules: https://news.linkedin.com/2025/Q4FY25_Earnings_Highlights , https://learn.microsoft.com/en-us/linkedin/shared/authentication/getting-access
+- Guardian Open Platform: https://open-platform.theguardian.com/ , https://open-platform.theguardian.com/access/
+- NewsAPI pricing/access: https://newsapi.org/pricing
+- mediastack docs: https://mediastack.com/documentation
+- OpenAI recent agent/coding themes: https://openai.com/index/introducing-codex/ , https://openai.com/index/introducing-the-codex-app/
+- Anthropic recent agent/coding themes: https://www.anthropic.com/news/claude-sonnet-4-5
+- Google recent agent/research/computer-use themes: https://blog.google/innovation-and-ai/technology/developers-tools/interactions-api/ , https://blog.google/innovation-and-ai/technology/developers-tools/deep-research-agent-gemini-api/ , https://blog.google/innovation-and-ai/models-and-research/google-deepmind/gemini-computer-use-model/
+
+# Context from my IDE setup:
+
+## Open tabs:
+- project-context.yml: project-context.yml
+- openai.yaml: skills/implementation-defaults/agents/openai.yaml
+- SKILL.md: skills/task-decomposition/SKILL.md
+- spec.md: spec.md
+- prompt.md: prompt.md
+
+## My request for Codex:
+1. Let's go with Bluesky (add a reminder to check out Mastodon at a later point)
+2. Let's go with GDELT (add a reminder to check out Hackernews at a later point)
+4. Let's go with a data-dictionary.md . In the UI also make data-dictionary.md downloadable.
+6. Let's go with option A (no hybrid)
+
+Updated the project docs with your choices: `Bluesky` is now the selected social source, `GDELT` is the selected news source, `CSV` is the default export format, `data-dictionary.md` has been added and marked as downloadable from the UI, and tracked-item seed option `A` is now the selected starting point. I also added deferred reminders for `Mastodon` and `Hacker News`, and captured the fetching preference that Streamlit server-side fetching and caching are allowed while client/static fetching remains a soft preference.
+
+I found and fixed one leftover inconsistency during the review: `goals.md` still had export format listed as an open question even though `CSV` was already chosen.
+
+What is still not fully specified enough for agents to implement without guessing:
+
+1. Composite weights: are you happy with `social=0.5`, `news=0.3`, `google_trends=0.2` as the initial values?
+2. Seed list contents: for option `A`, which exact tracked items should be included under each of the three topics?
+3. Partial-source behavior: if one data source fails, should the app recompute the composite score from the remaining sources, or should it keep the original formula and show a partial-data warning?
+
+After those three decisions, the project is concrete enough for agents to scaffold the first implementation without important product guesses.

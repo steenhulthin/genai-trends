@@ -25,6 +25,7 @@ The dashboard should help users identify which generative AI topics, concepts, a
 - Users can drill down from a topic into the tracked words or phrases within that topic.
 - Users can view trend data over time with adjustable granularity.
 - Users can export the currently filtered data in a standard file format.
+- Users can download the project `data-dictionary.md` from the UI.
 - The dashboard degrades gracefully with a friendly fallback state or error message when data cannot be loaded.
 
 ## Non-Goals
@@ -41,7 +42,10 @@ The dashboard should help users identify which generative AI topics, concepts, a
 
 ## Open Questions
 
-- Which exact social media and news sources are acceptable for the first implementation?
-- Which export format should be the default in the first version if only one format is supported?
 - How should topic membership be maintained when a term could belong to more than one topic?
+- Which exact tracked items should be included under each topic in the first implementation?
 
+## Deferred Options
+
+- Evaluate Mastodon later as an additional social-data source.
+- Evaluate Hacker News later as an additional news or discussion-oriented signal source.
