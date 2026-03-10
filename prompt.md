@@ -417,3 +417,58 @@ What is still not fully specified enough for agents to implement without guessin
 3. Partial-source behavior: if one data source fails, should the app recompute the composite score from the remaining sources, or should it keep the original formula and show a partial-data warning?
 
 After those three decisions, the project is concrete enough for agents to scaffold the first implementation without important product guesses.
+
+# Context from my IDE setup:
+
+## Active file: technology-choices.md
+
+## Open tabs:
+- technology-choices.md: technology-choices.md
+- spec.md: spec.md
+- prompt.md: prompt.md
+- project-context.yml: project-context.yml
+- goals.md: goals.md
+
+## My request for Codex:
+1. yes
+2. this (but make it easy to chance, in the future it might need to be evaluated dynamically):
+* prompt engineering 
+  - system prompt 
+  - tool use 
+  - evals 
+  - structured outputs 
+* advanced software production with agents 
+  - coding agent 
+  - multi-agent 
+  - worktrees 
+  - MCP 
+  - computer use 
+  - background mode 
+* general 
+  - Codex 
+  - Claude Sonnet 
+  - Gemini 
+  - Deep Research
+3. Keep remaining and warn.
+
+Applied the remaining decisions. The composite weights are now fixed at `0.5 / 0.3 / 0.2`, partial-source failures now resolve to `warn and keep remaining data`, and the tracked-item seed list has been moved into a dedicated `tracked-items.yml` file so it stays easy to edit now and easier to evaluate dynamically later. I also updated the project docs so they point to that file instead of keeping the seed list buried in prose.
+
+At this point only one meaningful product question is still open: how to handle topic membership when a term could plausibly belong to more than one topic. Everything else is now specific enough for agents to start scaffolding the first implementation without making product guesses.
+
+# Context from my IDE setup:
+
+## Active file: technology-choices.md
+
+## Open tabs:
+- technology-choices.md: technology-choices.md
+- spec.md: spec.md
+- prompt.md: prompt.md
+- project-context.yml: project-context.yml
+- goals.md: goals.md
+
+## My request for Codex:
+Right now just add to both topics. In real life topics overlap anywa.
+
+Updated the project docs to allow overlapping topic membership. For the current version, if a tracked item fits more than one topic, agents should include it in each relevant topic rather than forcing a single assignment.
+
+That closes the last open product rule. The project docs are now specific enough for agents to scaffold the first implementation without material product guessing.

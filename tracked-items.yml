@@ -1,0 +1,33 @@
+topics:
+  prompt_engineering:
+    update_mode: manual
+    items:
+      - system prompt
+      - tool use
+      - evals
+      - structured outputs
+  advanced_software_production_with_agents:
+    update_mode: manual
+    items:
+      - coding agent
+      - multi-agent
+      - worktrees
+      - MCP
+      - computer use
+      - background mode
+  general:
+    update_mode: manual
+    items:
+      - Codex
+      - Claude Sonnet
+      - Gemini
+      - Deep Research
+
+notes:
+  mutable: true
+  overlapping_topic_membership: allowed
+  overlap_rule: include_in_all_relevant_topics
+  future_direction: >
+    Keep the first version manually curated. A later iteration may evaluate
+    tracked items dynamically, but the initial implementation should treat this
+    file as the editable source of truth.

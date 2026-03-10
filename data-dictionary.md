@@ -21,3 +21,4 @@ This file documents the exported dashboard data so end users can understand and 
 
 - Column names and exact value conventions may be refined during implementation.
 - Keep this file aligned with the actual exported CSV schema.
+- The tracked-item definitions should come from `tracked-items.yml`.

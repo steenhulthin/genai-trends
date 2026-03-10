@@ -9,6 +9,9 @@
 - The first news-data provider is `GDELT`.
 - The first export format is `CSV`.
 - The project must include a downloadable `data-dictionary.md`.
+- The initial composite weights are `social=0.5`, `news=0.3`, and `google_trends=0.2`.
+- If a source fails, the UI should warn and continue showing the remaining data.
+- The initial tracked-item seed list should live in `tracked-items.yml`.
 
 ## Preferred Choices
 

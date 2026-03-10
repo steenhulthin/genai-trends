@@ -38,12 +38,9 @@ The dashboard should help users identify which generative AI topics, concepts, a
 
 - Topics are predefined for the first version.
 - A tracked item may be a single word or a short phrase representing one concept.
+- A tracked item may belong to multiple topics when that reflects real overlap.
+- The initial tracked-item seed list should live in a dedicated file so it can be updated without rewriting the higher-level project documents.
 - The initial topic set is intentionally small so agents can ship a working first version quickly.
-
-## Open Questions
-
-- How should topic membership be maintained when a term could belong to more than one topic?
-- Which exact tracked items should be included under each topic in the first implementation?
 
 ## Deferred Options
 

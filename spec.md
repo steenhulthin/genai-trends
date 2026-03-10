@@ -36,6 +36,7 @@
 
 - `topic`: a predefined group of related tracked items.
 - `tracked item`: a word or short phrase representing one concept, for example `vibe coding` or `Ralph Wiggum Loop`.
+- `topic membership`: a tracked item may appear in more than one topic when the concept overlaps naturally.
 - `source frequency`: the count or source-native interest signal returned for one tracked item within one time window and one source.
 - `composite popularity score`: a weighted combination of source frequencies across all enabled sources.
 - `time window`: the selected aggregation interval, initially daily, weekly, or monthly.
@@ -44,8 +45,12 @@
 
 - The first version should compute a simple weighted composite score using this model:
   - `social_frequency * social_factor + news_frequency * news_factor + google_trends_frequency * google_trends_factor`
-- The exact factor values are not yet fixed.
+- The initial factor values are:
+  - `social_factor = 0.5`
+  - `news_factor = 0.3`
+  - `google_trends_factor = 0.2`
 - Agents should keep the scoring implementation simple and easy to change.
+- If one source fails, the app should keep the remaining data visible and show a partial-data warning instead of failing hard.
 
 ## Non-Functional Requirements
 
@@ -73,12 +78,8 @@
 - The initial topic set is enough for the first release.
 - Agents should treat the topic taxonomy as predefined, not inferred from the data.
 - Use tracked-item seed list option `A` as the first implementation set.
-
-## Open Questions
-
-- What factor values should be used in the initial composite score?
-- Should source failures remove the source from the composite score dynamically, or should they produce a partial-data warning without recomputing weights?
-- Which exact tracked items from option `A` should be included in the initial seed list?
+- Store the concrete tracked-item seed list in `tracked-items.yml` so it is easy to change later or evaluate dynamically in a future iteration.
+- If a tracked item fits more than one topic, include it in each relevant topic.
 
 ## Deferred Options
 

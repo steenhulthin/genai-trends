@@ -18,6 +18,11 @@ tracked_items:
   examples:
     - vibe coding
     - Ralph Wiggum Loop
+  source_file: tracked-items.yml
+  seed_mode: manual_seed_list
+  future_direction: may_be_evaluated_dynamically_later
+  overlapping_topic_membership: allowed
+  overlap_rule: include_in_all_relevant_topics
 
 data_sources:
   priority_order:
@@ -41,7 +46,12 @@ metrics:
       social_frequency * social_factor +
       news_frequency * news_factor +
       google_trends_frequency * google_trends_factor
-    factors_fixed: false
+    factors_fixed: true
+    factors:
+      social: 0.5
+      news: 0.3
+      google_trends: 0.2
+    on_missing_source: warn_and_keep_remaining_data
 
 time:
   granularity:
@@ -86,7 +96,3 @@ export:
 
 seed_option:
   tracked_items: A
-
-open_questions:
-  - What factor values should be used for the composite score?
-  - Which exact tracked items from option A should be included in the initial seed list?
