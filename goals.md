@@ -23,9 +23,12 @@ The dashboard should help users identify which generative AI topics, concepts, a
   - `advanced software production with agents`
   - `general`
 - Users can drill down from a topic into the tracked words or phrases within that topic.
+- Users can clearly understand the hierarchy from topic to tracked items without relying on exported data.
 - Users can view trend data over time with adjustable granularity.
 - Users can export the currently filtered data in a standard file format.
 - Users can download the project `data-dictionary.md` from the UI.
+- The primary interface presents information through charts, cards, or structured lists rather than raw data tables.
+- The visual tone feels cheerful, nerdy, and welcoming to software developers.
 - The dashboard degrades gracefully with a friendly fallback state or error message when data cannot be loaded.
 
 ## Non-Goals
@@ -41,6 +44,7 @@ The dashboard should help users identify which generative AI topics, concepts, a
 - A tracked item may belong to multiple topics when that reflects real overlap.
 - The initial tracked-item seed list should live in a dedicated file so it can be updated without rewriting the higher-level project documents.
 - The initial topic set is intentionally small so agents can ship a working first version quickly.
+- The main on-screen experience should not depend on raw tabular presentation.
 
 ## Deferred Options
 

@@ -14,6 +14,8 @@
 - If a source fails, the UI should warn and continue showing the remaining data.
 - The initial tracked-item seed list should live in `tracked-items.yml`.
 - The export schema keeps the legacy `google_trends_frequency` field name for the tertiary signal to avoid breaking downstream CSV consumers.
+- The primary UI should present information with charts, cards, and structured lists rather than on-screen data tables.
+- The visual direction should be cheerful, nerdy, and welcoming to software developers.
 
 ## Preferred Choices
 
@@ -36,6 +38,8 @@
 - Server-side fetching and caching are allowed for the Streamlit path.
 - Client-side or static-friendly fetching remains a soft preference when it does not complicate delivery.
 - Mastodon tracked items are queried as normalized hashtags rather than full-text searches.
+- A UX/UI-focused agent is justified for the next interface pass because the product now has explicit hierarchy and visual-tone requirements beyond basic implementation.
+- A UX/UI-focused agent should be used for bounded interaction and visual design work, not for changing core data-source or scoring decisions without product approval.
 - Revisit `Reddit API` later if free authenticated access becomes practical again.
 - Revisit expanded `Hacker News` coverage later if story-only counts prove too thin.
 - Revisit `GDELT Web NGrams 3.0` later if the project needs more news scale than the Guardian API provides.

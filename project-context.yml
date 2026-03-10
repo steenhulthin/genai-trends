@@ -75,6 +75,7 @@ time:
 
 user_capabilities:
   - topic_drilldown
+  - hierarchical_topic_navigation
   - granularity_filter
   - current_window_visibility
   - data_export

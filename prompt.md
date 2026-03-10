@@ -934,3 +934,24 @@ I’ve synced the config with the fixed 7-day window too. I’m doing one last s
 Synced the scaffolding files with the current implementation. I updated `goals.md`, `spec.md`, `technology-choices.md`, `README.md`, `data-dictionary.md`, and `project-context.yml` so they consistently describe Mastodon hashtags, Guardian, and Hacker News, explain why the legacy `google_trends_frequency` name still exists, and reflect the current fixed 7-day fetch window instead of a user-controlled date range.
 
 I didn’t run an executable verification step because this workspace still doesn’t expose a runnable Python interpreter. This was a documentation and config consistency pass only.
+
+# Context from my IDE setup:
+
+## Active file: .streamlit/secrets.toml.example
+
+## Open tabs:
+- secrets.toml.example: .streamlit/secrets.toml.example
+- spec.md: spec.md
+- technology-choices.md: technology-choices.md
+- prompt.md: prompt.md
+- goals.md: goals.md
+
+## My request for Codex:
+The user experience needs some work. I think a UX/UI expert agent would be an option. Help me decide that.
+Also the specification in most likely a bit unclear: The end user should be able to clearly seen the word hierachy beneeth the topic. Also the tables should not be shown in the UI. The UI layout and style should be cheerful, nerdy and make a software developer feel welcome. 
+And this to the relevant specifacations.
+A UX/UI-focused agent is justified now. The product has moved past generic cleanup: you now have explicit requirements around hierarchy, presentation, and tone, and those are exactly the kinds of problems a specialist interface pass helps with. I would keep that agent’s scope bounded to interaction design, layout, component choices, and visual direction, not provider or scoring changes.
+
+I updated `spec.md`, `goals.md`, `technology-choices.md`, and `project-context.yml` so they now require a clear `topic -> tracked item -> signal detail` hierarchy, prohibit raw tables in the primary UI, prefer charts/cards/structured lists, and define the interface tone as cheerful, nerdy, and welcoming to software developers. I also added the decision note that a UX/UI-focused agent is appropriate for the next interface pass.
+
+This was a scaffolding update only. I did not change the app UI in this pass.

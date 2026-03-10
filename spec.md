@@ -24,10 +24,13 @@
   - a composite popularity score
 - The dashboard must allow users to:
   - select a topic and drill down into its tracked words or phrases
+  - clearly see the hierarchy from topic to tracked items in the main UI
   - select time granularity: daily, weekly, or monthly
   - inspect the currently active fetch window
   - download the currently filtered data in a standard file format
 - The dashboard must allow users to download `data-dictionary.md`.
+- The primary dashboard UI must not render raw data tables as part of the normal on-screen experience.
+- Tabular data may be used for exported files or internal debugging, but not as the main presentation layer.
 - The default time granularity must be daily.
 - Data must be loaded when the dashboard page is loaded.
 - Data must be reloaded when the user changes filters or refreshes the browser.
@@ -58,6 +61,8 @@
 - All controls should be reachable by keyboard.
 - The interface should degrade gracefully when one or more data sources fail.
 - Agents should prefer implementations that keep the dashboard responsive during page load and filter changes.
+- The visual style should feel cheerful, nerdy, and welcoming to software developers.
+- The layout should emphasize information hierarchy, visual scanning, and narrative flow over dense data presentation.
 
 ## Interfaces
 
@@ -66,6 +71,7 @@
 - Export output should use `CSV` in the first version.
 - The project should include a `data-dictionary.md` file that documents export columns, meanings, and examples.
 - The UI should expose `data-dictionary.md` as a downloadable artifact.
+- The main UI should prefer charts, cards, badges, and structured lists over generic tables.
 
 ## Validation
 
@@ -83,6 +89,7 @@
 - The export and scoring schema retains the legacy `google_trends_frequency` field name for compatibility even when the configured tertiary provider is not Google Trends.
 - When Mastodon is the social source, tracked items are normalized into compact hashtag slugs such as `system prompt -> #systemprompt`.
 - The current implementation keeps the live fetch window fixed to the latest seven days while the collectors are being stabilized.
+- The intended information architecture is `topic -> tracked items -> signal detail`, and that hierarchy should be obvious without reading exported data.
 
 ## Deferred Options
 
