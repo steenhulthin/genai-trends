@@ -837,3 +837,100 @@ genai-trends-dashboard
 add a readme 
 
 Added a root `README.md` with the project overview, current provider stack, local run steps, required credentials, logging behavior, key configuration files, export schema, and current limitations. It is aligned with the current `Reddit + Guardian + SerpApi` setup and points to `.streamlit/secrets.toml.example` for credential setup.
+
+# Context from my IDE setup:
+
+## Active file: .streamlit/secrets.toml.example
+
+## Active selection of the file:
+SERPAPI
+## Open tabs:
+- secrets.toml.example: .streamlit/secrets.toml.example
+- fetch.log: logs/fetch.log
+- app.py: app.py
+- secrets.toml: .streamlit/secrets.toml
+- requirements.txt: requirements.txt
+
+## My request for Codex:
+I cannot get a reddit  api key and need the access to be free of charge so SERPAPI is not an option either. 
+Suggest alternatives. 
+I’m checking how the app currently pulls Reddit data so the alternatives match this codebase, then I’ll suggest free replacements and the likely code changes.
+I found the codebase references to `reddit` and `SERPAPI`; next I’m checking the current implementation details so the alternatives are concrete rather than generic.
+I’ve confirmed the app currently assumes `Reddit app-only OAuth` plus `SerpApi` for Google Trends. I’m checking which free providers are realistic in 2026 so I can separate “works now” from “sounds possible but brittle.”
+I have enough context now. The realistic split is: “closest drop-in replacements” versus “change the signal slightly but stay fully free.” I’m checking the config names once so I can map recommendations directly onto the current `social_media` and `google_trends` slots.
+I’ve verified the current provider slots in config. Next I’m compiling the short list that is actually free, no-key or low-friction, and reasonable for this dashboard’s counting model.
+I’ve narrowed it to two viable paths: one that stays closest to the current design but is brittle, and one that changes the signal slightly but is much cleaner operationally. I’m logging the recommendation and then I’ll give you the concrete shortlist.
+There are workable free substitutes, but not a perfect no-key match for both Reddit search and Google Trends.
+
+Best practical options for this dashboard:
+- Replace Reddit with `Hacker News API` if your topics are developer-heavy. It is official, public, and documents no rate limit. This is the cleanest free `social_media` source.
+- Replace Reddit with `Mastodon` if hashtag/activity is acceptable. Public search is available, but unauthenticated full-text status search depends on the server, so it is better for hashtags than arbitrary phrase counts.
+- Use Reddit RSS or public `.json` endpoints only as a fallback. They are free and usually usable, but they are not a stable official API contract, so I would treat them as brittle scraping, not a long-term dependency.
+- Replace SerpApi with `GDELT DOC 2.0` if you can accept “media attention” instead of “Google search interest.” It is free and your repo already lists GDELT as an alternative.
+- Use `pytrends` only as a temporary bridge. It needs no API key, but the repo was archived on April 17, 2025, so breakage risk is real.
+- Google now has an official `Google Trends API alpha`, but as of March 10, 2026 it is still early-access/application-based, so it is not a general free drop-in.
+
+My recommendation:
+- For a fully free and reasonably stable stack: `Hacker News + Guardian + GDELT`.
+- For the closest behavior to your current design: `Reddit RSS/public JSON + Guardian + pytrends`, with the understanding that the Reddit and Google Trends pieces are both brittle.
+
+If you want, I can make the code changes for one of those two paths next.
+
+Sources:
+- Google Trends API alpha: https://developers.google.com/search/apis/trends
+- Google announcement: https://developers.google.com/search/blog/2025/07/trends-api
+- pytrends archive status: https://github.com/GeneralMills/pytrends
+- Hacker News API: https://github.com/HackerNews/API
+- Mastodon search docs: https://docs.joinmastodon.org/methods/search/
+- GDELT docs/blog: https://blog.gdeltproject.org/visualizing-the-news-announcing-the-gdelt-doc-2-0-api/amp/ and https://blog.gdeltproject.org/announcing-the-gdelt-context-2-0-api/
+
+# Context from my IDE setup:
+
+## Active file: .streamlit/secrets.toml.example
+
+## Active selection of the file:
+SERPAPI
+## Open tabs:
+- secrets.toml.example: .streamlit/secrets.toml.example
+- fetch.log: logs/fetch.log
+- app.py: app.py
+- secrets.toml: .streamlit/secrets.toml
+- requirements.txt: requirements.txt
+
+## My request for Codex:
+Go with mastodon hashtags in stead of reddit and hacker news in stead of serpapi
+I’m switching the providers in code now: `reddit -> mastodon hashtags` for the social signal, and `serpapi -> hacker news` for the trends slot, then I’ll run a quick verification pass on the data flow and config.
+I’m at the point where the main implementation choice matters: Mastodon hashtags means I need a deterministic tag mapping from each tracked term to a hashtag slug. I’m checking the tracked item list now so I can make that mapping predictable and avoid obviously broken tags.
+I’m editing the source layer now. The main change is replacing the credentialed Reddit/SerpApi fetchers with anonymous Mastodon hashtag paging and Hacker News search paging while keeping the dataset shape stable.
+The provider swap is in place. I’m checking the rewritten fetch module for syntax issues and then I’ll align the UI/config/docs to the new source names and assumptions.
+I’ve finished the fetcher rewrite. Now I’m aligning the visible copy and config so the app describes the actual providers and the remaining schema mismatch is explicit rather than confusing.
+The visible config/docs are updated. I’m doing one more sweep for stale `Reddit`/`SerpApi` references that still affect the runtime path, then I’ll run a syntax verification.
+The code references are clean for the live path. The compile check timed out on the first pass, so I’m rerunning it with a longer timeout to catch syntax/import problems before I stop.
+The compile issue was the interpreter invocation, not the code itself. I’m checking which Python launcher is available in this workspace and then re-running the same verification.
+I can’t execute a Python compile step here because the workspace only exposes the Windows Store launcher stub, not a runnable interpreter. I’m doing a diff review instead and then I’ll summarize the behavior change and the main assumption you should be aware of.
+Switched the live providers to Mastodon hashtags and Hacker News. `genai_trends/data.py` now fetches Mastodon tag timelines using normalized hashtag slugs from tracked terms and uses Hacker News search for story counts in the tertiary slot. `project-context.yml`, `app.py`, and `.streamlit/secrets.toml.example` were updated to match; docs now note that `google_trends_frequency` is kept only for schema compatibility.
+
+I couldn’t run a Python compile or app smoke test here because this workspace only exposes a non-runnable Python launcher stub. Verification was a static code pass plus reference sweep. One assumption to be aware of: multi-word tracked items are converted to compact hashtags such as `system prompt -> #systemprompt`, and the Hacker News signal currently counts stories, not comments.
+
+# Context from my IDE setup:
+
+## Active file: spec.md
+
+## Open tabs:
+- spec.md: spec.md
+- technology-choices.md: technology-choices.md
+- prompt.md: prompt.md
+- goals.md: goals.md
+- data-dictionary.md: data-dictionary.md
+
+## My request for Codex:
+Go through all scaffolding files (spec seems out of sync with decisions on manstodon).
+I’m reviewing the repo’s scaffolding docs for stale provider references and decision drift, then I’ll patch the set so the written spec matches the current Mastodon and Hacker News implementation.
+I’ve found the drift points. The biggest ones are in `goals.md` and `spec.md`, where the narrative still says `Google Trends` and treats Mastodon/Hacker News as deferred even though they’re now the selected sources.
+I’m patching the documentation now. The main goal is to stop mixing the legacy schema name `google_trends_frequency` with the actual provider decision, and to remove “deferred” language for sources that are already selected.
+I found one more real drift beyond provider names: the scaffold still implies a user-controlled date range, but the app currently fixes the fetch window to the latest 7 days. I’m syncing that as well so the docs do not overstate the current UI.
+The spec update is in. The config patch missed on context because I targeted the wrong section order, so I’m reopening that file and patching the exact blocks instead of guessing.
+I’ve synced the config with the fixed 7-day window too. I’m doing one last sweep for leftover “deferred Mastodon/Hacker News” language and stale date-range capability claims, then I’ll close this out.
+Synced the scaffolding files with the current implementation. I updated `goals.md`, `spec.md`, `technology-choices.md`, `README.md`, `data-dictionary.md`, and `project-context.yml` so they consistently describe Mastodon hashtags, Guardian, and Hacker News, explain why the legacy `google_trends_frequency` name still exists, and reflect the current fixed 7-day fetch window instead of a user-controlled date range.
+
+I didn’t run an executable verification step because this workspace still doesn’t expose a runnable Python interpreter. This was a documentation and config consistency pass only.

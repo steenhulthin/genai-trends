@@ -5,14 +5,15 @@
 - Hosting targets may include GitHub Pages and `share.streamlit.io`.
 - The project may use static-site-friendly technologies such as `stlite`, `shinylive`, WebAssembly-based approaches, or other true static site technologies if performance is acceptable.
 - A Streamlit deployment on `share.streamlit.io` is allowed.
-- The first social-data provider is `Reddit API`.
+- The first social-data provider is `Mastodon` hashtag timelines.
 - The first news-data provider is `Guardian Open Platform`.
-- The first Google Trends provider is `SerpApi`.
+- The first tertiary trend/discussion provider is `Hacker News` search.
 - The first export format is `CSV`.
 - The project must include a downloadable `data-dictionary.md`.
 - The initial composite weights are `social=0.5`, `news=0.3`, and `google_trends=0.2`.
 - If a source fails, the UI should warn and continue showing the remaining data.
 - The initial tracked-item seed list should live in `tracked-items.yml`.
+- The export schema keeps the legacy `google_trends_frequency` field name for the tertiary signal to avoid breaking downstream CSV consumers.
 
 ## Preferred Choices
 
@@ -34,10 +35,11 @@
 - If a static-first approach materially improves performance or hosting simplicity without slowing delivery too much, agents may recommend it.
 - Server-side fetching and caching are allowed for the Streamlit path.
 - Client-side or static-friendly fetching remains a soft preference when it does not complicate delivery.
-- Revisit `Mastodon` later as an additional social source.
-- Revisit `Hacker News` later as an additional signal source.
+- Mastodon tracked items are queried as normalized hashtags rather than full-text searches.
+- Revisit `Reddit API` later if free authenticated access becomes practical again.
+- Revisit expanded `Hacker News` coverage later if story-only counts prove too thin.
 - Revisit `GDELT Web NGrams 3.0` later if the project needs more news scale than the Guardian API provides.
-- Revisit `DataForSEO` later as an alternative Google Trends provider.
+- Revisit `SerpApi` or `DataForSEO` later if Google Trends data becomes a requirement again.
 
 ## Seed Topic Option
 

@@ -4,7 +4,7 @@
 
 The project should help users understand which generative AI topics and terms are gaining or losing momentum over time.
 
-The dashboard should group trend signals from social media, news mentions, and Google Trends, with social media as the highest-priority source, news as second priority, and Google Trends as third priority.
+The dashboard should group trend signals from social media, news mentions, and a tertiary discussion or interest source, with social media as the highest-priority source, news as second priority, and the tertiary signal as third priority.
 
 ## Audience
 
@@ -44,5 +44,5 @@ The dashboard should help users identify which generative AI topics, concepts, a
 
 ## Deferred Options
 
-- Evaluate Mastodon later as an additional social-data source.
-- Evaluate Hacker News later as an additional news or discussion-oriented signal source.
+- Revisit `Reddit API` later if free authenticated access becomes practical again.
+- Revisit literal `Google Trends` providers later if search-interest data becomes a stronger requirement than discussion counts.

@@ -4,7 +4,9 @@ from dataclasses import asdict, dataclass
 from datetime import date
 from time import perf_counter, sleep
 from typing import Any, Iterable
+from urllib.parse import quote
 import os
+import re
 
 import pandas as pd
 import requests
@@ -12,13 +14,16 @@ import requests
 from genai_trends.logging_utils import get_logger
 
 
-REDDIT_TOKEN_URL = "https://www.reddit.com/api/v1/access_token"
-REDDIT_SEARCH_URL = "https://oauth.reddit.com/search"
+MASTODON_DEFAULT_BASE_URL = "https://mastodon.social"
+MASTODON_PAGE_SIZE = 40
+MASTODON_MAX_PAGES = 5
+MASTODON_TAG_TIMELINE_URL = "/api/v1/timelines/tag/{tag}"
 GUARDIAN_SEARCH_URL = "https://content.guardianapis.com/search"
-SERPAPI_SEARCH_URL = "https://serpapi.com/search.json"
+HACKER_NEWS_SEARCH_URL = "https://hn.algolia.com/api/v1/search_by_date"
+HACKER_NEWS_PAGE_SIZE = 100
+HACKER_NEWS_MAX_PAGES = 10
 
 REQUEST_TIMEOUT = (5, 30)
-GOOGLE_TRENDS_BATCH_SIZE = 5
 BACKOFF_DELAYS_SECONDS = (1.0, 2.0)
 GUARDIAN_CALL_DELAY_SECONDS = 1.1
 
@@ -201,62 +206,85 @@ def _config_error_metric(source: str, tracked_item: str, detail: str) -> FetchMe
     return _metric(source, tracked_item, "config_error", perf_counter(), detail=detail)
 
 
-def _build_reddit_user_agent() -> str:
-    configured = _required_env("REDDIT_USER_AGENT")
+def _mastodon_base_url() -> str:
+    configured = _required_env("MASTODON_BASE_URL")
     if configured:
-        return configured
-    return "genai-trends-dashboard/0.1"
+        return configured.rstrip("/")
+    return MASTODON_DEFAULT_BASE_URL
 
 
-def _get_reddit_access_token(session: requests.Session) -> str:
-    client_id = _required_env("REDDIT_CLIENT_ID")
-    client_secret = _required_env("REDDIT_CLIENT_SECRET")
-    if not client_id or not client_secret:
-        raise ValueError("missing REDDIT_CLIENT_ID or REDDIT_CLIENT_SECRET")
-
-    response = session.post(
-        REDDIT_TOKEN_URL,
-        auth=(client_id, client_secret),
-        data={"grant_type": "client_credentials"},
-        headers={"User-Agent": _build_reddit_user_agent()},
-        timeout=REQUEST_TIMEOUT,
-    )
-    response.raise_for_status()
-    payload = response.json()
-    token = payload.get("access_token")
-    if not token:
-        raise ValueError("reddit token response did not include access_token")
-    return token
+def _mastodon_headers() -> dict[str, str]:
+    headers = {"User-Agent": "genai-trends-dashboard/0.1"}
+    access_token = _required_env("MASTODON_ACCESS_TOKEN")
+    if access_token:
+        headers["Authorization"] = f"Bearer {access_token}"
+    return headers
 
 
-def fetch_reddit_series(
+def _hashtag_slug(term: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", term.lower())
+
+
+def fetch_mastodon_series(
     session: requests.Session,
-    access_token: str,
     term: str,
     period_start: date,
     granularity: str,
     period_index: pd.DatetimeIndex,
 ) -> tuple[pd.Series, FetchMetric]:
     started_at = perf_counter()
-    params = {
-        "q": _phrase_query(term),
-        "sort": "new",
-        "limit": 100,
-        "type": "link",
-        "t": "week",
-    }
-    headers = {
-        "Authorization": f"bearer {access_token}",
-        "User-Agent": _build_reddit_user_agent(),
-    }
+    hashtag = _hashtag_slug(term)
+    if not hashtag:
+        return _empty_series(period_index), _config_error_metric("mastodon", term, "empty hashtag slug")
+
+    url = f"{_mastodon_base_url()}{MASTODON_TAG_TIMELINE_URL.format(tag=quote(hashtag))}"
+    headers = _mastodon_headers()
+    timestamps: list[pd.Timestamp] = []
+    max_id: str | None = None
+    total_rows = 0
+    partial = False
+    last_status_code: int | None = None
 
     try:
-        response = _retryable_http_get(session, REDDIT_SEARCH_URL, params, headers=headers)
-        payload = response.json()
+        for page in range(MASTODON_MAX_PAGES):
+            params: dict[str, Any] = {"limit": MASTODON_PAGE_SIZE}
+            if max_id:
+                params["max_id"] = max_id
+
+            response = _retryable_http_get(session, url, params, headers=headers)
+            last_status_code = response.status_code
+            payload = response.json()
+            if not isinstance(payload, list):
+                raise ValueError("mastodon tag timeline did not return a list")
+            if not payload:
+                break
+
+            total_rows += len(payload)
+            oldest_timestamp: pd.Timestamp | None = None
+            for status in payload:
+                created_at = status.get("created_at")
+                if not created_at:
+                    continue
+                timestamp = pd.to_datetime(created_at, utc=True)
+                oldest_timestamp = timestamp if oldest_timestamp is None else min(oldest_timestamp, timestamp)
+                if timestamp.date() >= period_start:
+                    timestamps.append(timestamp)
+
+            last_id = payload[-1].get("id")
+            if not last_id:
+                break
+            max_id = str(last_id)
+
+            if oldest_timestamp is not None and oldest_timestamp.date() < period_start:
+                break
+            if len(payload) < MASTODON_PAGE_SIZE:
+                break
+            if page == MASTODON_MAX_PAGES - 1:
+                partial = True
     except requests.HTTPError as exc:
         status_code = exc.response.status_code if exc.response is not None else None
         return _empty_series(period_index), _metric(
-            "reddit",
+            "mastodon",
             term,
             "http_error",
             started_at,
@@ -265,27 +293,21 @@ def fetch_reddit_series(
             detail=str(exc),
         )
     except requests.RequestException as exc:
-        return _empty_series(period_index), _metric("reddit", term, "request_error", started_at, detail=str(exc))
+        return _empty_series(period_index), _metric("mastodon", term, "request_error", started_at, detail=str(exc))
+    except ValueError as exc:
+        return _empty_series(period_index), _metric("mastodon", term, "parse_error", started_at, detail=str(exc))
     except Exception as exc:
-        return _empty_series(period_index), _metric("reddit", term, "error", started_at, detail=str(exc))
-
-    children = payload.get("data", {}).get("children", [])
-    timestamps: list[pd.Timestamp] = []
-    for child in children:
-        created_utc = child.get("data", {}).get("created_utc")
-        if created_utc is None:
-            continue
-        timestamp = pd.to_datetime(created_utc, unit="s", utc=True)
-        if timestamp.date() >= period_start:
-            timestamps.append(timestamp)
+        return _empty_series(period_index), _metric("mastodon", term, "error", started_at, detail=str(exc))
 
     return _bucket_series_from_timestamps(timestamps, period_index, granularity), _metric(
-        "reddit",
+        "mastodon",
         term,
         "ok",
         started_at,
-        http_status=response.status_code,
-        rows_returned=len(children),
+        http_status=last_status_code,
+        partial=partial,
+        rows_returned=total_rows,
+        detail=f"#{hashtag}",
     )
 
 
@@ -342,131 +364,96 @@ def fetch_guardian_series(
     )
 
 
-def _serpapi_date_value(period_start: date, period_end: date) -> str:
-    if (period_end - period_start).days <= 6:
-        return "now 7-d"
-    return f"{period_start.isoformat()} {period_end.isoformat()}"
+def _hacker_news_date_filters(period_start: date, period_end: date) -> str:
+    start_ts = int(pd.Timestamp(period_start).timestamp())
+    end_ts = int((pd.Timestamp(period_end) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)).timestamp())
+    return f"created_at_i>={start_ts},created_at_i<={end_ts}"
 
 
-def _extract_numeric_value(value: Any) -> float | None:
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        cleaned = value.replace("<", "").replace(",", "").strip()
-        if not cleaned:
-            return None
-        try:
-            return float(cleaned)
-        except ValueError:
-            return None
-    return None
-
-
-def fetch_serpapi_google_trends_batch(
+def fetch_hacker_news_series(
     session: requests.Session,
-    terms: list[str],
+    term: str,
     period_start: date,
     period_end: date,
+    granularity: str,
     period_index: pd.DatetimeIndex,
-) -> tuple[dict[str, pd.Series], list[FetchMetric], bool]:
+) -> tuple[pd.Series, FetchMetric]:
     started_at = perf_counter()
-    api_key = _required_env("SERPAPI_API_KEY")
-    if not api_key:
-        detail = "missing SERPAPI_API_KEY"
-        metrics = [_config_error_metric("serpapi", term, detail) for term in terms]
-        return {term: _empty_series(period_index) for term in terms}, metrics, False
-
-    params = {
-        "engine": "google_trends",
-        "data_type": "TIMESERIES",
-        "q": ",".join(terms),
-        "date": _serpapi_date_value(period_start, period_end),
-        "tz": "0",
-        "api_key": api_key,
-    }
+    timestamps: list[pd.Timestamp] = []
+    total_rows = 0
+    partial = False
+    last_status_code: int | None = None
 
     try:
-        response = _retryable_http_get(session, SERPAPI_SEARCH_URL, params)
-        payload = response.json()
+        for page in range(HACKER_NEWS_MAX_PAGES):
+            params = {
+                "query": term,
+                "tags": "story",
+                "numericFilters": _hacker_news_date_filters(period_start, period_end),
+                "hitsPerPage": HACKER_NEWS_PAGE_SIZE,
+                "page": page,
+            }
+            response = _retryable_http_get(session, HACKER_NEWS_SEARCH_URL, params)
+            last_status_code = response.status_code
+            payload = response.json()
+            hits = payload.get("hits", [])
+            if not isinstance(hits, list):
+                raise ValueError("hacker news search did not return hits")
+            if not hits:
+                break
+
+            total_rows += len(hits)
+            for hit in hits:
+                created_at_i = hit.get("created_at_i")
+                if created_at_i is None:
+                    continue
+                timestamp = pd.to_datetime(int(created_at_i), unit="s", utc=True)
+                if period_start <= timestamp.date() <= period_end:
+                    timestamps.append(timestamp)
+
+            nb_pages = payload.get("nbPages", 0)
+            if not isinstance(nb_pages, int):
+                raise ValueError("hacker news search did not return integer nbPages")
+            if page + 1 >= nb_pages:
+                break
+            if page == HACKER_NEWS_MAX_PAGES - 1:
+                partial = True
     except requests.HTTPError as exc:
         status_code = exc.response.status_code if exc.response is not None else None
-        throttled = status_code == 429
-        metrics = [
-            _metric(
-                "serpapi",
-                term,
-                "http_error",
-                started_at,
-                http_status=status_code,
-                throttled=throttled,
-                detail=str(exc),
-            )
-            for term in terms
-        ]
-        return {term: _empty_series(period_index) for term in terms}, metrics, throttled
+        return _empty_series(period_index), _metric(
+            "hacker_news",
+            term,
+            "http_error",
+            started_at,
+            http_status=status_code,
+            throttled=status_code == 429,
+            detail=str(exc),
+        )
     except requests.RequestException as exc:
-        metrics = [_metric("serpapi", term, "request_error", started_at, detail=str(exc)) for term in terms]
-        return {term: _empty_series(period_index) for term in terms}, metrics, False
+        return _empty_series(period_index), _metric(
+            "hacker_news",
+            term,
+            "request_error",
+            started_at,
+            detail=str(exc),
+        )
     except ValueError as exc:
-        metrics = [_metric("serpapi", term, "parse_error", started_at, detail=str(exc)) for term in terms]
-        return {term: _empty_series(period_index) for term in terms}, metrics, False
+        return _empty_series(period_index), _metric("hacker_news", term, "parse_error", started_at, detail=str(exc))
+    except Exception as exc:
+        return _empty_series(period_index), _metric("hacker_news", term, "error", started_at, detail=str(exc))
 
-    api_error = payload.get("error")
-    if api_error:
-        detail = str(api_error)
-        throttled = "429" in detail or "Too Many Requests" in detail
-        metrics = [
-            _metric("serpapi", term, "error", started_at, throttled=throttled, detail=detail)
-            for term in terms
-        ]
-        return {term: _empty_series(period_index) for term in terms}, metrics, throttled
-
-    timeline = payload.get("interest_over_time", {}).get("timeline_data", [])
-    if not timeline:
-        metrics = [_metric("serpapi", term, "ok", started_at, rows_returned=0) for term in terms]
-        return {term: _empty_series(period_index, 0.0) for term in terms}, metrics, False
-
-    raw_points: dict[str, list[tuple[pd.Timestamp, float]]] = {term: [] for term in terms}
-    for item in timeline:
-        timestamp_raw = item.get("timestamp")
-        if timestamp_raw is None:
-            continue
-        try:
-            timestamp = pd.to_datetime(int(timestamp_raw), unit="s", utc=True).tz_convert(None)
-        except Exception:
-            continue
-
-        values = item.get("values", [])
-        for index, term in enumerate(terms):
-            if index >= len(values):
-                continue
-            value_entry = values[index]
-            numeric_value = _extract_numeric_value(value_entry.get("extracted_value"))
-            if numeric_value is None:
-                numeric_value = _extract_numeric_value(value_entry.get("value"))
-            if numeric_value is None:
-                continue
-            raw_points[term].append((timestamp, numeric_value))
-
-    series_map: dict[str, pd.Series] = {}
-    metrics: list[FetchMetric] = []
-    for term in terms:
-        points = raw_points[term]
-        if not points:
-            series_map[term] = _empty_series(period_index, 0.0)
-            metrics.append(_metric("serpapi", term, "ok", started_at, rows_returned=0))
-            continue
-
-        dates = [point[0] for point in points]
-        values = [point[1] for point in points]
-        series = pd.Series(values, index=pd.to_datetime(dates))
-        series_map[term] = _align_series(series, period_index, "mean")
-        metrics.append(_metric("serpapi", term, "ok", started_at, rows_returned=len(points)))
-
-    return series_map, metrics, False
+    return _bucket_series_from_timestamps(timestamps, period_index, granularity), _metric(
+        "hacker_news",
+        term,
+        "ok",
+        started_at,
+        http_status=last_status_code,
+        partial=partial,
+        rows_returned=total_rows,
+    )
 
 
-def _load_reddit_source(
+def _load_mastodon_source(
     session: requests.Session,
     unique_terms: list[str],
     period_start: date,
@@ -475,26 +462,16 @@ def _load_reddit_source(
 ) -> tuple[dict[str, pd.Series], dict[str, FetchMetric]]:
     series_map: dict[str, pd.Series] = {}
     metrics_map: dict[str, FetchMetric] = {}
-    access_token: str | None = None
-
-    try:
-        access_token = _get_reddit_access_token(session)
-    except Exception as exc:
-        detail = str(exc)
-        for term in unique_terms:
-            series_map[term] = _empty_series(period_index)
-            metrics_map[term] = _config_error_metric("reddit", term, detail)
-        return series_map, metrics_map
-
     blocked = False
+
     for term in unique_terms:
         if blocked:
-            metric = _metric("reddit", term, "skipped", perf_counter(), detail="skipped after earlier access block")
+            metric = _metric("mastodon", term, "skipped", perf_counter(), detail="skipped after earlier access block")
             series_map[term] = _empty_series(period_index)
             metrics_map[term] = metric
             continue
 
-        series, metric = fetch_reddit_series(session, access_token, term, period_start, granularity, period_index)
+        series, metric = fetch_mastodon_series(session, term, period_start, granularity, period_index)
         if metric.http_status in {401, 403}:
             blocked = True
         series_map[term] = series
@@ -556,45 +533,44 @@ def _load_guardian_source(
     return series_map, metrics_map
 
 
-def _load_serpapi_google_trends_source(
+def _load_hacker_news_source(
     session: requests.Session,
     unique_terms: list[str],
     period_start: date,
     period_end: date,
+    granularity: str,
     period_index: pd.DatetimeIndex,
 ) -> tuple[dict[str, pd.Series], dict[str, FetchMetric]]:
     series_map: dict[str, pd.Series] = {}
     metrics_map: dict[str, FetchMetric] = {}
     rate_limited = False
 
-    for index in range(0, len(unique_terms), GOOGLE_TRENDS_BATCH_SIZE):
-        batch = unique_terms[index : index + GOOGLE_TRENDS_BATCH_SIZE]
+    for term in unique_terms:
         if rate_limited:
-            for term in batch:
-                metric = _metric(
-                    "serpapi",
-                    term,
-                    "skipped",
-                    perf_counter(),
-                    throttled=True,
-                    detail="skipped after earlier SerpApi rate limit",
-                )
-                series_map[term] = _empty_series(period_index)
-                metrics_map[term] = metric
+            metric = _metric(
+                "hacker_news",
+                term,
+                "skipped",
+                perf_counter(),
+                throttled=True,
+                detail="skipped after earlier Hacker News rate limit",
+            )
+            series_map[term] = _empty_series(period_index)
+            metrics_map[term] = metric
             continue
 
-        batch_series_map, batch_metrics, throttled = fetch_serpapi_google_trends_batch(
+        series, metric = fetch_hacker_news_series(
             session,
-            batch,
+            term,
             period_start,
             period_end,
+            granularity,
             period_index,
         )
-        rate_limited = throttled
-        for term in batch:
-            series_map[term] = batch_series_map[term]
-        for metric in batch_metrics:
-            metrics_map[metric.tracked_item] = metric
+        if metric.throttled:
+            rate_limited = True
+        series_map[term] = series
+        metrics_map[term] = metric
 
     return series_map, metrics_map
 
@@ -641,7 +617,7 @@ def generate_dataset(
     session = requests.Session()
     session.headers.update({"User-Agent": "genai-trends-dashboard/0.1"})
 
-    social_series_map, social_metrics = _load_reddit_source(
+    social_series_map, social_metrics = _load_mastodon_source(
         session,
         unique_terms,
         period_start,
@@ -656,11 +632,12 @@ def generate_dataset(
         granularity,
         period_index,
     )
-    trends_series_map, trends_metrics = _load_serpapi_google_trends_source(
+    trends_series_map, trends_metrics = _load_hacker_news_source(
         session,
         unique_terms,
         period_start,
         period_end,
+        granularity,
         period_index,
     )
     session.close()

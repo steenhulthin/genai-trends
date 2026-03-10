@@ -4,9 +4,9 @@ Streamlit dashboard for tracking trend signals around predefined generative AI t
 
 The current implementation combines:
 
-- `Reddit API` for social-media mentions
+- `Mastodon` hashtag timelines for social-media mentions
 - `Guardian Open Platform` for news mentions
-- `SerpApi` for Google Trends interest-over-time data
+- `Hacker News` story search for discussion-oriented mention counts
 
 The app groups those signals into three topics:
 
@@ -29,18 +29,16 @@ The app groups those signals into three topics:
 pip install -r requirements.txt
 ```
 
-2. Provide credentials as environment variables or Streamlit secrets.
+2. Provide the required provider settings as environment variables or Streamlit secrets.
 
 Required keys:
 
-- `REDDIT_CLIENT_ID`
-- `REDDIT_CLIENT_SECRET`
 - `GUARDIAN_API_KEY`
-- `SERPAPI_API_KEY`
 
 Optional:
 
-- `REDDIT_USER_AGENT`
+- `MASTODON_BASE_URL`
+- `MASTODON_ACCESS_TOKEN`
 - `APP_LOG_LEVEL`
 - `APP_ENV`
 
@@ -94,11 +92,12 @@ The filtered export is CSV and currently includes:
 - `available_sources`
 - `partial_data_warning`
 
-See `data-dictionary.md` for details.
+See `data-dictionary.md` for details. The `google_trends_frequency` column name is retained for compatibility even though the current provider is `Hacker News`.
 
 ## Known Limitations
 
-- Live data quality depends on external API credentials and provider limits.
+- Live data quality depends on external provider behavior and provider limits.
 - `Guardian Open Platform` is used for simplicity; `GDELT Web NGrams 3.0` remains a later option for higher-scale news ingestion.
-- `SerpApi` is the current Google Trends provider; `DataForSEO` remains a later alternative.
+- Mastodon counts are derived from normalized hashtags, so multi-word tracked items are queried as compact tags such as `#systemprompt`.
+- `Hacker News` is the current tertiary signal provider; `SerpApi` and `DataForSEO` remain later alternatives if Google Trends data is needed again.
 - The current implementation still fetches on page load rather than using a scheduled ingestion pipeline.

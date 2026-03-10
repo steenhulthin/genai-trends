@@ -53,9 +53,9 @@ default_start = today - timedelta(days=6)
 
 st.title("genAI Trends Dashboard")
 st.caption(
-    "Config-driven dashboard for topic trends across Reddit, Guardian Open Platform, and Google Trends. "
-    "The current implementation uses Reddit app-only OAuth, the Guardian content API, and SerpApi "
-    "for Google Trends."
+    "Config-driven dashboard for topic trends across Mastodon hashtags, Guardian coverage, and Hacker News. "
+    "The current implementation uses public Mastodon tag timelines, the Guardian content API, and "
+    "Hacker News story search."
 )
 
 with st.sidebar:
@@ -218,7 +218,9 @@ with dictionary_col:
         "- Composite score uses configurable source weights.\n"
         "- If one source is missing, the app keeps remaining data and warns.\n"
         "- The export includes the currently selected topic and period only.\n"
-        "- Live providers currently require external API credentials for fully populated results.\n"
+        "- Mastodon hashtags are derived from tracked items by removing spaces and punctuation.\n"
+        "- Only the Guardian source requires an API credential in the current setup.\n"
+        "- The `google_trends_frequency` export column name is retained for compatibility even when the provider is not Google Trends.\n"
         "- Detailed runtime instrumentation is written to the log files."
     )
 

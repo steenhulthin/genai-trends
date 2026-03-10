@@ -10,22 +10,22 @@
 - The dashboard must show grouped trend signals from:
   - social media
   - news mentions
-  - Google Trends
+  - a tertiary discussion or interest source
 - Source priority must be treated as:
   - social media: highest priority
   - news mentions: second priority
-  - Google Trends: third priority
+  - tertiary discussion or interest source: third priority
 - The first implementation must use:
-  - `Reddit API` for social media
+  - `Mastodon` hashtag timelines for social media
   - `Guardian Open Platform` for news mentions
-  - `SerpApi` for Google Trends search-interest data
+  - `Hacker News` story search for the tertiary trend/discussion signal
 - The dashboard must show both:
   - source-specific frequency values
   - a composite popularity score
 - The dashboard must allow users to:
   - select a topic and drill down into its tracked words or phrases
   - select time granularity: daily, weekly, or monthly
-  - select a time period for the displayed data
+  - inspect the currently active fetch window
   - download the currently filtered data in a standard file format
 - The dashboard must allow users to download `data-dictionary.md`.
 - The default time granularity must be daily.
@@ -80,10 +80,13 @@
 - Use tracked-item seed list option `A` as the first implementation set.
 - Store the concrete tracked-item seed list in `tracked-items.yml` so it is easy to change later or evaluate dynamically in a future iteration.
 - If a tracked item fits more than one topic, include it in each relevant topic.
+- The export and scoring schema retains the legacy `google_trends_frequency` field name for compatibility even when the configured tertiary provider is not Google Trends.
+- When Mastodon is the social source, tracked items are normalized into compact hashtag slugs such as `system prompt -> #systemprompt`.
+- The current implementation keeps the live fetch window fixed to the latest seven days while the collectors are being stabilized.
 
 ## Deferred Options
 
-- Evaluate Mastodon later as an additional social-data source.
-- Evaluate Hacker News later as an additional news or discussion-oriented signal source.
+- Evaluate `Reddit API` later as an additional social-data source if free access becomes practical again.
+- Evaluate richer `Hacker News` coverage later if comment counts or alternate search providers are needed.
 - Evaluate `GDELT Web NGrams 3.0` later if the project needs a higher-scale news pipeline.
-- Evaluate `DataForSEO` later as an alternative Google Trends provider.
+- Evaluate `SerpApi` or `DataForSEO` later as alternative Google Trends providers.

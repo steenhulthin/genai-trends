@@ -31,17 +31,19 @@ data_sources:
     - google_trends
   grouping_required: true
   selected:
-    social_media: reddit
+    social_media: mastodon
     news_mentions: guardian
-    google_trends: serpapi
+    google_trends: hacker_news
   alternatives:
+    social_media:
+      - reddit
     news_mentions:
       - gdelt_web_ngrams
     google_trends:
+      - serpapi
       - dataforseo
   deferred:
-    - mastodon
-    - hacker_news
+    - gdelt_context
 
 metrics:
   source_specific:
@@ -65,6 +67,7 @@ time:
       - daily
       - weekly
       - monthly
+  fetch_window_days: 7
   reload_behavior:
     on_page_load: true
     on_filter_change: true
@@ -73,7 +76,7 @@ time:
 user_capabilities:
   - topic_drilldown
   - granularity_filter
-  - date_range_filter
+  - current_window_visibility
   - data_export
   - data_dictionary_download
 
