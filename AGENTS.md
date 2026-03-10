@@ -16,6 +16,11 @@
 - When instructions become domain-specific, workflow-specific, or role-specific, refactor them into more specific nested `AGENTS.md` files or skills instead of overloading the root file.
 - Reuse and extend skills whenever that yields clearer, more maintainable agent behavior.
 
+## Logging
+- Runtime instrumentation must be written to log files, not rendered as detailed dashboard tables.
+- Add general application logging for important runtime behavior, external fetches, warnings, and failures.
+- Default logging should use `INFO` in normal debugging contexts and `ERROR` and above in production contexts unless a more specific override is explicitly configured.
+
 ## Agent Execution Model
 - Use `planner -> executor -> verifier` as the default operating model for non-trivial work.
 - Treat low user gating as the default: proceed unless blocked by destructive actions, missing product intent, conflicting constraints, or permissions.

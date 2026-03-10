@@ -8,6 +8,7 @@ import streamlit as st
 
 from genai_trends.config import load_project_context, load_tracked_items
 from genai_trends.data import build_export_frame, build_topic_summary, generate_dataset
+from genai_trends.logging_utils import get_logger
 
 
 st.set_page_config(
@@ -15,6 +16,8 @@ st.set_page_config(
     page_icon=":bar_chart:",
     layout="wide",
 )
+
+LOGGER = get_logger("genai_trends")
 
 
 @st.cache_data(show_spinner=False)
@@ -32,7 +35,7 @@ def get_dataset(
     period_start: date,
     period_end: date,
     granularity: str,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, dict]:
     return generate_dataset(
         context=get_context(),
         tracked_items=get_tracked_items(),
@@ -46,7 +49,7 @@ context = get_context()
 tracked_items = get_tracked_items()
 
 today = date.today()
-default_start = today - timedelta(days=30)
+default_start = today - timedelta(days=6)
 
 st.title("genAI Trends Dashboard")
 st.caption(
@@ -66,22 +69,31 @@ with st.sidebar:
         granularity_options,
         index=granularity_options.index(default_granularity),
     )
-    date_range = st.date_input(
-        "Period",
-        value=(default_start, today),
-        min_value=today - timedelta(days=365),
-        max_value=today,
+    st.caption("Current fetch scope is fixed to the latest 7 days while the live collectors are being stabilized.")
+    period_start = default_start
+    period_end = today
+    st.date_input(
+        "Current fetch window",
+        value=(period_start, period_end),
+        disabled=True,
     )
 
-    if isinstance(date_range, tuple) and len(date_range) == 2:
-        period_start, period_end = date_range
-    else:
-        period_start, period_end = default_start, today
-
-data, fetch_metrics, fetch_summary = get_dataset(
+data, load_status = get_dataset(
     period_start=period_start,
     period_end=period_end,
     granularity=selected_granularity,
+)
+
+LOGGER.info(
+    "dashboard_rendered",
+    extra={
+        "event": "dashboard_rendered",
+        "topic": selected_topic,
+        "granularity": selected_granularity,
+        "period_start": period_start.isoformat(),
+        "period_end": period_end.isoformat(),
+        "rows": int(data.shape[0]),
+    },
 )
 
 filtered = data[data["topic"] == selected_topic].copy()
@@ -96,11 +108,23 @@ if not partial_data_rows.empty:
         "The dashboard is keeping the remaining data visible."
     )
 
-throttled_calls = int(fetch_metrics["throttled"].sum()) if not fetch_metrics.empty else 0
-if throttled_calls > 0:
+if int(load_status["throttled_calls"]) > 0:
+    LOGGER.error(
+        "dashboard_throttled_warning",
+        extra={"event": "dashboard_throttled_warning", "throttled_calls": int(load_status["throttled_calls"])},
+    )
     st.error(
-        f"Detected {throttled_calls} throttled API calls in the current load. "
-        "Use the diagnostics panel below to identify the source."
+        f"Detected {int(load_status['throttled_calls'])} throttled API calls in the current load. "
+        "Detailed fetch diagnostics have been written to the log files."
+    )
+elif int(load_status["error_calls"]) > 0:
+    LOGGER.warning(
+        "dashboard_partial_warning",
+        extra={
+            "event": "dashboard_partial_warning",
+            "error_calls": int(load_status["error_calls"]),
+            "partial_rows": int(load_status["partial_rows"]),
+        },
     )
 
 metric_columns = st.columns(3)
@@ -121,17 +145,6 @@ else:
         latest_topic_snapshot.iloc[0]["tracked_item"],
         f"{latest_topic_snapshot.iloc[0]['composite_score']:.1f}",
     )
-
-diagnostic_columns = st.columns(3)
-if fetch_summary.empty:
-    diagnostic_columns[0].metric("Load duration", "n/a")
-    diagnostic_columns[1].metric("API calls", "0")
-    diagnostic_columns[2].metric("Throttled calls", "0")
-else:
-    total_row = fetch_summary[fetch_summary["source"] == "all_sources"].iloc[0]
-    diagnostic_columns[0].metric("Load duration", f"{total_row['total_duration_ms']:.1f} ms")
-    diagnostic_columns[1].metric("API calls", f"{int(total_row['calls'])}")
-    diagnostic_columns[2].metric("Throttled calls", f"{int(total_row['throttled_calls'])}")
 
 overview_col, details_col = st.columns((1.2, 1))
 
@@ -204,24 +217,9 @@ with dictionary_col:
         "- Composite score uses configurable source weights.\n"
         "- If one source is missing, the app keeps remaining data and warns.\n"
         "- The export includes the currently selected topic and period only.\n"
-        "- Bluesky counts come from public search results and should be treated as an approximation."
+        "- Bluesky counts come from public search results and should be treated as an approximation.\n"
+        "- Detailed runtime instrumentation is written to the log files."
     )
 
 with st.expander("Tracked item seed list"):
     st.json(tracked_items)
-
-with st.expander("Fetch diagnostics"):
-    st.markdown(
-        "- `http_error` indicates the source returned a non-2xx response.\n"
-        "- `throttled=true` means the source explicitly signaled rate limiting or a 429-style error.\n"
-        "- `partial=true` means the source returned only a partial series for that tracked item."
-    )
-    st.dataframe(fetch_summary, width="stretch", hide_index=True)
-    if fetch_metrics.empty:
-        st.info("No per-call diagnostics were captured for this load.")
-    else:
-        st.dataframe(
-            fetch_metrics.sort_values(["duration_ms", "source"], ascending=[False, True]),
-            width="stretch",
-            hide_index=True,
-        )

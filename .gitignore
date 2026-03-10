@@ -41,6 +41,7 @@ Thumbs.db
 
 # Local outputs and temp files
 *.log
+logs/
 *.tmp
 tmp/
 temp/

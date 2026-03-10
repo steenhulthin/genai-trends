@@ -2,17 +2,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass, asdict
 from datetime import date, datetime, timedelta
-from time import perf_counter
+from time import perf_counter, sleep
 from typing import Any, Iterable
 
 import pandas as pd
 import requests
 from pytrends.request import TrendReq
 
+from genai_trends.logging_utils import get_logger
+
 
 BLUESKY_SEARCH_URL = "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts"
 GDELT_DOC_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
 REQUEST_TIMEOUT = (5, 30)
+GOOGLE_TRENDS_BATCH_SIZE = 5
+BACKOFF_DELAYS_SECONDS = (1.0, 2.0)
 
 SOURCE_NAME_MAP = {
     "social_media": "bluesky",
@@ -26,6 +30,9 @@ SOURCE_WEIGHT_MAP = {
     "google_trends": "google_trends",
 }
 
+LOGGER = get_logger("genai_trends")
+FETCH_LOGGER = get_logger("genai_trends.fetch")
+
 
 @dataclass
 class FetchMetric:
@@ -37,7 +44,17 @@ class FetchMetric:
     throttled: bool = False
     partial: bool = False
     rows_returned: int = 0
-    message: str = ""
+    detail: str = ""
+
+
+@dataclass
+class LoadStatus:
+    total_duration_ms: float
+    api_calls: int
+    throttled_calls: int
+    partial_calls: int
+    error_calls: int
+    partial_rows: int
 
 
 def _metric(
@@ -50,9 +67,9 @@ def _metric(
     throttled: bool = False,
     partial: bool = False,
     rows_returned: int = 0,
-    message: str = "",
+    detail: str = "",
 ) -> FetchMetric:
-    return FetchMetric(
+    metric = FetchMetric(
         source=source,
         tracked_item=tracked_item,
         status=status,
@@ -61,8 +78,13 @@ def _metric(
         throttled=throttled,
         partial=partial,
         rows_returned=rows_returned,
-        message=message,
+        detail=detail,
     )
+    FETCH_LOGGER.info(
+        "fetch_metric",
+        extra={"event": "fetch_metric", **asdict(metric)},
+    )
+    return metric
 
 
 def _date_index(period_start: date, period_end: date, granularity: str) -> pd.DatetimeIndex:
@@ -79,6 +101,10 @@ def _item_records(tracked_items: dict) -> list[dict[str, str]]:
         for item in topic_data["items"]:
             records.append({"topic": topic_name, "tracked_item": item})
     return records
+
+
+def _unique_terms(item_records: list[dict[str, str]]) -> list[str]:
+    return sorted({record["tracked_item"] for record in item_records})
 
 
 def _empty_series(period_index: pd.DatetimeIndex, fill_value: float | None = None) -> pd.Series:
@@ -126,21 +152,44 @@ def _bucket_series_from_timestamps(
     return _align_series(bucketed, period_index, "sum")
 
 
+def _retryable_http_get(
+    session: requests.Session,
+    url: str,
+    params: dict[str, Any],
+) -> requests.Response:
+    last_error: Exception | None = None
+    for attempt, delay in enumerate((0.0, *BACKOFF_DELAYS_SECONDS), start=1):
+        if delay:
+            sleep(delay)
+        try:
+            response = session.get(url, params=params, timeout=REQUEST_TIMEOUT)
+            if response.status_code == 429 and attempt <= len(BACKOFF_DELAYS_SECONDS):
+                last_error = requests.HTTPError("429 throttled", response=response)
+                continue
+            response.raise_for_status()
+            return response
+        except requests.RequestException as exc:
+            last_error = exc
+            response = getattr(exc, "response", None)
+            if response is None or response.status_code != 429 or attempt > len(BACKOFF_DELAYS_SECONDS):
+                break
+    if last_error is None:
+        raise RuntimeError("request failed without error details")
+    raise last_error
+
+
 def fetch_bluesky_series(
     session: requests.Session,
     term: str,
     period_start: date,
-    period_end: date,
     granularity: str,
     period_index: pd.DatetimeIndex,
 ) -> tuple[pd.Series, FetchMetric]:
     started_at = perf_counter()
-    query = f"{_phrase_query(term)} since:{period_start.isoformat()} until:{(period_end + timedelta(days=1)).isoformat()}"
-    params = {"q": query, "sort": "latest", "limit": 100}
+    params = {"q": _phrase_query(term), "sort": "latest", "limit": 100}
 
     try:
-        response = session.get(BLUESKY_SEARCH_URL, params=params, timeout=REQUEST_TIMEOUT)
-        response.raise_for_status()
+        response = _retryable_http_get(session, BLUESKY_SEARCH_URL, params)
         payload = response.json()
     except requests.HTTPError as exc:
         status_code = exc.response.status_code if exc.response is not None else None
@@ -151,7 +200,7 @@ def fetch_bluesky_series(
             started_at,
             http_status=status_code,
             throttled=status_code == 429,
-            message=str(exc),
+            detail=str(exc),
         )
     except requests.RequestException as exc:
         return _empty_series(period_index), _metric(
@@ -159,7 +208,7 @@ def fetch_bluesky_series(
             term,
             "request_error",
             started_at,
-            message=str(exc),
+            detail=str(exc),
         )
     except Exception as exc:
         return _empty_series(period_index), _metric(
@@ -167,7 +216,7 @@ def fetch_bluesky_series(
             term,
             "error",
             started_at,
-            message=str(exc),
+            detail=str(exc),
         )
 
     posts = payload.get("posts", [])
@@ -175,7 +224,7 @@ def fetch_bluesky_series(
     for post in posts:
         record = post.get("record", {})
         created_at = record.get("createdAt") or post.get("indexedAt")
-        if created_at:
+        if created_at and pd.to_datetime(created_at).date() >= period_start:
             timestamps.append(created_at)
 
     return _bucket_series_from_timestamps(timestamps, period_index, granularity), _metric(
@@ -205,11 +254,17 @@ def fetch_gdelt_series(
     }
 
     try:
-        response = session.get(GDELT_DOC_URL, params=params, timeout=REQUEST_TIMEOUT)
-        response.raise_for_status()
+        response = _retryable_http_get(session, GDELT_DOC_URL, params)
         payload = response.json()
     except requests.HTTPError as exc:
         status_code = exc.response.status_code if exc.response is not None else None
+        detail = str(exc)
+        if exc.response is not None:
+            try:
+                snippet = exc.response.text[:200]
+                detail = f"{detail} body={snippet}"
+            except Exception:
+                pass
         return _empty_series(period_index), _metric(
             "gdelt",
             term,
@@ -217,7 +272,7 @@ def fetch_gdelt_series(
             started_at,
             http_status=status_code,
             throttled=status_code == 429,
-            message=str(exc),
+            detail=detail,
         )
     except requests.RequestException as exc:
         return _empty_series(period_index), _metric(
@@ -225,7 +280,15 @@ def fetch_gdelt_series(
             term,
             "request_error",
             started_at,
-            message=str(exc),
+            detail=str(exc),
+        )
+    except ValueError as exc:
+        return _empty_series(period_index), _metric(
+            "gdelt",
+            term,
+            "parse_error",
+            started_at,
+            detail=str(exc),
         )
     except Exception as exc:
         return _empty_series(period_index), _metric(
@@ -233,7 +296,7 @@ def fetch_gdelt_series(
             term,
             "error",
             started_at,
-            message=str(exc),
+            detail=str(exc),
         )
 
     timeline = payload.get("timeline", [])
@@ -278,113 +341,192 @@ def fetch_gdelt_series(
     )
 
 
-def fetch_google_trends_series(
+def fetch_google_trends_batch(
     pytrends: TrendReq,
-    term: str,
+    terms: list[str],
     period_start: date,
     period_end: date,
     period_index: pd.DatetimeIndex,
-) -> tuple[pd.Series, FetchMetric]:
+) -> tuple[dict[str, pd.Series], list[FetchMetric], bool]:
     started_at = perf_counter()
-
     try:
         pytrends.build_payload(
-            kw_list=[term],
+            kw_list=terms,
             timeframe=f"{period_start.isoformat()} {period_end.isoformat()}",
             geo="",
             gprop="",
         )
         trend_frame = pytrends.interest_over_time()
     except Exception as exc:
-        message = str(exc)
-        throttled = "429" in message or "Too Many Requests" in message
-        return _empty_series(period_index), _metric(
-            "google_trends",
-            term,
-            "error",
-            started_at,
-            throttled=throttled,
-            message=message,
-        )
+        detail = str(exc)
+        throttled = "429" in detail or "Too Many Requests" in detail
+        metrics = [
+            _metric(
+                "google_trends",
+                term,
+                "error",
+                started_at,
+                throttled=throttled,
+                detail=detail,
+            )
+            for term in terms
+        ]
+        return {term: _empty_series(period_index) for term in terms}, metrics, throttled
 
-    if trend_frame.empty or term not in trend_frame.columns:
-        return _empty_series(period_index, 0.0), _metric(
-            "google_trends",
-            term,
-            "ok",
-            started_at,
-            rows_returned=0,
-        )
+    if trend_frame.empty:
+        metrics = [
+            _metric("google_trends", term, "ok", started_at, rows_returned=0)
+            for term in terms
+        ]
+        return {term: _empty_series(period_index, 0.0) for term in terms}, metrics, False
 
-    partial = False
-    series = trend_frame[term]
-    series.index = pd.to_datetime(series.index).tz_localize(None)
+    partial_mask = None
     if "isPartial" in trend_frame.columns:
         partial_mask = trend_frame["isPartial"].astype(bool)
-        partial = bool(partial_mask.any())
-        series = series[~partial_mask]
+        trend_frame = trend_frame[~partial_mask]
 
-    return _align_series(series.astype("float64"), period_index, "mean"), _metric(
-        "google_trends",
-        term,
-        "ok",
-        started_at,
-        partial=partial,
-        rows_returned=len(series),
-    )
+    series_map: dict[str, pd.Series] = {}
+    metrics: list[FetchMetric] = []
+    for term in terms:
+        if term in trend_frame.columns:
+            series = trend_frame[term].astype("float64")
+            series.index = pd.to_datetime(series.index).tz_localize(None)
+            series_map[term] = _align_series(series, period_index, "mean")
+            metrics.append(
+                _metric(
+                    "google_trends",
+                    term,
+                    "ok",
+                    started_at,
+                    partial=bool(partial_mask.any()) if partial_mask is not None else False,
+                    rows_returned=len(series),
+                )
+            )
+        else:
+            series_map[term] = _empty_series(period_index, 0.0)
+            metrics.append(_metric("google_trends", term, "ok", started_at, rows_returned=0))
+    return series_map, metrics, False
 
 
-def _summarize_metrics(metrics: list[FetchMetric], total_duration_ms: float) -> pd.DataFrame:
-    metric_frame = pd.DataFrame(asdict(metric) for metric in metrics)
-    if metric_frame.empty:
-        return pd.DataFrame(
-            columns=[
-                "source",
-                "calls",
-                "ok_calls",
-                "error_calls",
-                "throttled_calls",
-                "partial_calls",
-                "total_duration_ms",
-                "avg_duration_ms",
-                "max_duration_ms",
-            ]
+def _load_bluesky_source(
+    session: requests.Session,
+    unique_terms: list[str],
+    period_start: date,
+    granularity: str,
+    period_index: pd.DatetimeIndex,
+) -> tuple[dict[str, pd.Series], dict[str, FetchMetric]]:
+    series_map: dict[str, pd.Series] = {}
+    metrics_map: dict[str, FetchMetric] = {}
+    blocked = False
+
+    for term in unique_terms:
+        if blocked:
+            metric = _metric(
+                "bluesky",
+                term,
+                "skipped",
+                perf_counter(),
+                detail="skipped after earlier access block",
+            )
+            series_map[term] = _empty_series(period_index)
+            metrics_map[term] = metric
+            continue
+
+        series, metric = fetch_bluesky_series(session, term, period_start, granularity, period_index)
+        if metric.http_status == 403:
+            blocked = True
+        series_map[term] = series
+        metrics_map[term] = metric
+
+    return series_map, metrics_map
+
+
+def _load_gdelt_source(
+    session: requests.Session,
+    unique_terms: list[str],
+    period_start: date,
+    period_end: date,
+    period_index: pd.DatetimeIndex,
+) -> tuple[dict[str, pd.Series], dict[str, FetchMetric]]:
+    series_map: dict[str, pd.Series] = {}
+    metrics_map: dict[str, FetchMetric] = {}
+    rate_limited = False
+
+    for term in unique_terms:
+        if rate_limited:
+            metric = _metric(
+                "gdelt",
+                term,
+                "skipped",
+                perf_counter(),
+                throttled=True,
+                detail="skipped after earlier GDELT rate limit",
+            )
+            series_map[term] = _empty_series(period_index)
+            metrics_map[term] = metric
+            continue
+
+        series, metric = fetch_gdelt_series(session, term, period_start, period_end, period_index)
+        if metric.throttled:
+            rate_limited = True
+        series_map[term] = series
+        metrics_map[term] = metric
+
+    return series_map, metrics_map
+
+
+def _load_google_trends_source(
+    pytrends: TrendReq,
+    unique_terms: list[str],
+    period_start: date,
+    period_end: date,
+    period_index: pd.DatetimeIndex,
+) -> tuple[dict[str, pd.Series], dict[str, FetchMetric]]:
+    series_map: dict[str, pd.Series] = {}
+    metrics_map: dict[str, FetchMetric] = {}
+    rate_limited = False
+
+    for index in range(0, len(unique_terms), GOOGLE_TRENDS_BATCH_SIZE):
+        batch = unique_terms[index : index + GOOGLE_TRENDS_BATCH_SIZE]
+        if rate_limited:
+            for term in batch:
+                metric = _metric(
+                    "google_trends",
+                    term,
+                    "skipped",
+                    perf_counter(),
+                    throttled=True,
+                    detail="skipped after earlier Google Trends rate limit",
+                )
+                series_map[term] = _empty_series(period_index)
+                metrics_map[term] = metric
+            continue
+
+        batch_series_map, batch_metrics, throttled = fetch_google_trends_batch(
+            pytrends,
+            batch,
+            period_start,
+            period_end,
+            period_index,
         )
+        rate_limited = throttled
+        for term in batch:
+            series_map[term] = batch_series_map[term]
+        for metric in batch_metrics:
+            metrics_map[metric.tracked_item] = metric
 
-    summary = (
-        metric_frame.groupby("source", as_index=False)
-        .agg(
-            calls=("source", "count"),
-            ok_calls=("status", lambda values: int((pd.Series(values) == "ok").sum())),
-            error_calls=("status", lambda values: int((pd.Series(values) != "ok").sum())),
-            throttled_calls=("throttled", "sum"),
-            partial_calls=("partial", "sum"),
-            total_duration_ms=("duration_ms", "sum"),
-            avg_duration_ms=("duration_ms", "mean"),
-            max_duration_ms=("duration_ms", "max"),
-        )
-        .sort_values("total_duration_ms", ascending=False)
-    )
-    summary["total_duration_ms"] = summary["total_duration_ms"].round(1)
-    summary["avg_duration_ms"] = summary["avg_duration_ms"].round(1)
-    summary["max_duration_ms"] = summary["max_duration_ms"].round(1)
+    return series_map, metrics_map
 
-    total_row = pd.DataFrame(
-        [
-            {
-                "source": "all_sources",
-                "calls": int(metric_frame.shape[0]),
-                "ok_calls": int((metric_frame["status"] == "ok").sum()),
-                "error_calls": int((metric_frame["status"] != "ok").sum()),
-                "throttled_calls": int(metric_frame["throttled"].sum()),
-                "partial_calls": int(metric_frame["partial"].sum()),
-                "total_duration_ms": round(total_duration_ms, 1),
-                "avg_duration_ms": round(metric_frame["duration_ms"].mean(), 1),
-                "max_duration_ms": round(metric_frame["duration_ms"].max(), 1),
-            }
-        ]
+
+def _build_status(metrics: list[FetchMetric], dataset: pd.DataFrame, total_duration_ms: float) -> LoadStatus:
+    return LoadStatus(
+        total_duration_ms=round(total_duration_ms, 1),
+        api_calls=len(metrics),
+        throttled_calls=sum(1 for metric in metrics if metric.throttled),
+        partial_calls=sum(1 for metric in metrics if metric.partial),
+        error_calls=sum(1 for metric in metrics if metric.status not in {"ok", "skipped"}),
+        partial_rows=int(dataset["partial_data_warning"].sum()) if not dataset.empty else 0,
     )
-    return pd.concat([summary, total_row], ignore_index=True)
 
 
 def generate_dataset(
@@ -393,54 +535,64 @@ def generate_dataset(
     period_start: date,
     period_end: date,
     granularity: str,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, dict[str, Any]]:
     total_started_at = perf_counter()
     period_index = _date_index(period_start, period_end, granularity)
     item_records = _item_records(tracked_items)
+    unique_terms = _unique_terms(item_records)
     weights = context["metrics"]["composite_score"]["factors"]
-    metrics: list[FetchMetric] = []
+
+    LOGGER.info(
+        "dataset_load_started",
+        extra={
+            "event": "dataset_load_started",
+            "tracked_item_count": len(unique_terms),
+            "granularity": granularity,
+            "period_start": period_start.isoformat(),
+            "period_end": period_end.isoformat(),
+        },
+    )
 
     session = requests.Session()
+    session.headers.update({"User-Agent": "genai-trends-dashboard/0.1"})
     pytrends = TrendReq(hl="en-US", tz=0, timeout=(10, 25))
+
+    bluesky_series_map, bluesky_metrics = _load_bluesky_source(
+        session,
+        unique_terms,
+        period_start,
+        granularity,
+        period_index,
+    )
+    gdelt_series_map, gdelt_metrics = _load_gdelt_source(
+        session,
+        unique_terms,
+        period_start,
+        period_end,
+        period_index,
+    )
+    google_trends_series_map, google_trends_metrics = _load_google_trends_source(
+        pytrends,
+        unique_terms,
+        period_start,
+        period_end,
+        period_index,
+    )
+    session.close()
 
     rows: list[dict[str, Any]] = []
     for record in item_records:
         topic = record["topic"]
         tracked_item = record["tracked_item"]
-
-        bluesky_series, bluesky_metric = fetch_bluesky_series(
-            session=session,
-            term=tracked_item,
-            period_start=period_start,
-            period_end=period_end,
-            granularity=granularity,
-            period_index=period_index,
-        )
-        gdelt_series, gdelt_metric = fetch_gdelt_series(
-            session=session,
-            term=tracked_item,
-            period_start=period_start,
-            period_end=period_end,
-            period_index=period_index,
-        )
-        google_trends_series, google_trends_metric = fetch_google_trends_series(
-            pytrends=pytrends,
-            term=tracked_item,
-            period_start=period_start,
-            period_end=period_end,
-            period_index=period_index,
-        )
-        metrics.extend([bluesky_metric, gdelt_metric, google_trends_metric])
-
         source_series = {
-            "bluesky": bluesky_series,
-            "gdelt": gdelt_series,
-            "google_trends": google_trends_series,
+            "bluesky": bluesky_series_map[tracked_item],
+            "gdelt": gdelt_series_map[tracked_item],
+            "google_trends": google_trends_series_map[tracked_item],
         }
         source_metrics = {
-            "bluesky": bluesky_metric,
-            "gdelt": gdelt_metric,
-            "google_trends": google_trends_metric,
+            "bluesky": bluesky_metrics[tracked_item],
+            "gdelt": gdelt_metrics[tracked_item],
+            "google_trends": google_trends_metrics[tracked_item],
         }
 
         for bucket in period_index:
@@ -475,12 +627,17 @@ def generate_dataset(
             row["composite_score"] = round(composite_score, 2)
             rows.append(row)
 
-    session.close()
-
     dataset = pd.DataFrame(rows)
-    metric_frame = pd.DataFrame(asdict(metric) for metric in metrics)
-    summary_frame = _summarize_metrics(metrics, (perf_counter() - total_started_at) * 1000)
-    return dataset, metric_frame, summary_frame
+    metrics = list(bluesky_metrics.values()) + list(gdelt_metrics.values()) + list(google_trends_metrics.values())
+    total_duration_ms = (perf_counter() - total_started_at) * 1000
+    status = _build_status(metrics, dataset, total_duration_ms)
+
+    LOGGER.info(
+        "dataset_load_finished",
+        extra={"event": "dataset_load_finished", **asdict(status)},
+    )
+
+    return dataset, asdict(status)
 
 
 def build_topic_summary(frame: pd.DataFrame) -> pd.DataFrame:
