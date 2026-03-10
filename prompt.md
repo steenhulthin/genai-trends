@@ -506,3 +506,28 @@ The current data layer is intentionally a deterministic sample-data scaffold, no
 add a appropriate .gitignore file
 
 Added a root `.gitignore` with sensible defaults for this Python/Streamlit project, including Python caches, virtual environments, build artifacts, local Streamlit secrets, OS/editor noise, and temp files. I also kept `.vscode/launch.json` tracked while ignoring other `.vscode` files.
+
+# Context from my IDE setup:
+
+## Active file: app.py
+
+## Open tabs:
+- app.py: app.py
+- launch.json: .vscode/launch.json
+- SKILL.md: skills/task-decomposition/SKILL.md
+- SKILL.md: skills/implementation-defaults/SKILL.md
+- requirements.txt: requirements.txt
+
+## My request for Codex:
+I get this: 
+2026-03-10 14:20:32.150 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+But go ahead and add real data. Feel free to go through scaffolding file again. 
+
+Fixed the Streamlit deprecation by replacing the remaining `use_container_width` usage with `width="stretch"` and switched the scaffold to live data collection. `app.py` now uses the current width API and drives the UI from live source fetches, while `genai_trends/data.py` now calls the Bluesky public search endpoint, the GDELT DOC timeline API, and Google Trends via `pytrends`, applies your configured weights, and preserves the partial-data warning behavior instead of failing hard. I also updated `requirements.txt` with the new runtime dependencies and tightened `data-dictionary.md` so the export docs match the live schema and note the Bluesky approximation.
+
+I could not run the app here because Python execution is blocked in this environment, so verification was a manual code pass only. Two implementation caveats remain by design: the Google Trends path depends on the unofficial `pytrends` client, and `bluesky_frequency` is based on public search results rather than full-firehose counts. The implementation details were based on the current Streamlit width guidance, Bluesky public API docs, GDELT DOC API docs, and `pytrends` usage docs.

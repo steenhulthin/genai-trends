@@ -50,9 +50,9 @@ default_start = today - timedelta(days=30)
 
 st.title("genAI Trends Dashboard")
 st.caption(
-    "Config-driven scaffold for topic trends across Bluesky, GDELT, and Google Trends. "
-    "The current build uses deterministic sample data so the dashboard shell can be implemented "
-    "before live collectors are connected."
+    "Config-driven dashboard for topic trends across Bluesky, GDELT, and Google Trends. "
+    "Bluesky uses public search results, GDELT uses the DOC timeline API, and Google Trends uses "
+    "an unofficial client backend that can occasionally rate-limit or change."
 )
 
 with st.sidebar:
@@ -125,13 +125,13 @@ with overview_col:
         values="composite_score",
         aggfunc="mean",
     ).sort_index()
-    st.line_chart(topic_summary_chart, use_container_width=True)
+    st.line_chart(topic_summary_chart, width="stretch")
 
 with details_col:
     st.subheader(f"{selected_topic} latest ranking")
     st.dataframe(
         latest_topic_snapshot[["tracked_item", "composite_score", "available_sources"]],
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 
@@ -142,7 +142,7 @@ tracked_item_chart = filtered.pivot_table(
     values="composite_score",
     aggfunc="mean",
 ).sort_index()
-st.line_chart(tracked_item_chart, use_container_width=True)
+st.line_chart(tracked_item_chart, width="stretch")
 
 source_cols = st.columns(3)
 for index, source_key in enumerate(context["data_sources"]["priority_order"]):
@@ -154,7 +154,7 @@ for index, source_key in enumerate(context["data_sources"]["priority_order"]):
         st.markdown(f"**{source_name.replace('_', ' ').title()}**")
         st.dataframe(
             source_frame.sort_values(["period_end", "tracked_item"], ascending=[False, True]),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 
@@ -167,8 +167,9 @@ with export_col:
         data=export_frame.to_csv(index=False).encode("utf-8"),
         file_name=f"genai-trends-{selected_topic.replace(' ', '-')}.csv",
         mime="text/csv",
+        width="stretch",
     )
-    st.dataframe(export_frame, use_container_width=True, hide_index=True)
+    st.dataframe(export_frame, width="stretch", hide_index=True)
 
 with dictionary_col:
     with (Path(__file__).resolve().parent / "data-dictionary.md").open("rb") as handle:
@@ -177,13 +178,15 @@ with dictionary_col:
             data=handle.read(),
             file_name="data-dictionary.md",
             mime="text/markdown",
+            width="stretch",
         )
     st.markdown("**About this data**")
     st.markdown(
         "- Source grouping follows the configured priority order.\n"
         "- Composite score uses configurable source weights.\n"
         "- If one source is missing, the app keeps remaining data and warns.\n"
-        "- The export includes the currently selected topic and period only."
+        "- The export includes the currently selected topic and period only.\n"
+        "- Bluesky counts come from public search results and should be treated as an approximation."
     )
 
 with st.expander("Tracked item seed list"):
