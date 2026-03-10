@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implementation Defaults"
+  short_description: "Bias implementation toward direct action, local verification, and concise reporting."
+

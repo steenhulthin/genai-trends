@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verification Gate"
+  short_description: "Accept, retry once, or escalate based on evidence."
+

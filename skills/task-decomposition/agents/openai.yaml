@@ -1,0 +1,4 @@
+interface:
+  display_name: "Task Decomposition"
+  short_description: "Break work into executable units with clear stop conditions."
+

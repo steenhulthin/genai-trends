@@ -16,6 +16,8 @@
 - When instructions become domain-specific, workflow-specific, or role-specific, refactor them into more specific nested `AGENTS.md` files or skills instead of overloading the root file.
 - Reuse and extend skills whenever that yields clearer, more maintainable agent behavior.
 
-## Agent Execution Bias
-- Agents should perform as much of the task as possible directly instead of pushing work back to the user.
-- Default to executing, editing, verifying, and documenting changes unless blocked by missing information, permissions, or a high-risk ambiguity.
+## Agent Execution Model
+- Use `planner -> executor -> verifier` as the default operating model for non-trivial work.
+- Treat low user gating as the default: proceed unless blocked by destructive actions, missing product intent, conflicting constraints, or permissions.
+- Use repo-local skills to support decomposition, implementation defaults, and verification gates before adding more root-level rules.
+- Allow at most one bounded self-repair cycle after verification failure. Escalate on a second failure with a concise blocker report.
