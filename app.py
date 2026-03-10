@@ -32,7 +32,7 @@ def get_dataset(
     period_start: date,
     period_end: date,
     granularity: str,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     return generate_dataset(
         context=get_context(),
         tracked_items=get_tracked_items(),
@@ -78,7 +78,7 @@ with st.sidebar:
     else:
         period_start, period_end = default_start, today
 
-data = get_dataset(
+data, fetch_metrics, fetch_summary = get_dataset(
     period_start=period_start,
     period_end=period_end,
     granularity=selected_granularity,
@@ -94,6 +94,13 @@ if not partial_data_rows.empty:
     st.warning(
         "Some source data is unavailable for part of the selected result set. "
         "The dashboard is keeping the remaining data visible."
+    )
+
+throttled_calls = int(fetch_metrics["throttled"].sum()) if not fetch_metrics.empty else 0
+if throttled_calls > 0:
+    st.error(
+        f"Detected {throttled_calls} throttled API calls in the current load. "
+        "Use the diagnostics panel below to identify the source."
     )
 
 metric_columns = st.columns(3)
@@ -114,6 +121,17 @@ else:
         latest_topic_snapshot.iloc[0]["tracked_item"],
         f"{latest_topic_snapshot.iloc[0]['composite_score']:.1f}",
     )
+
+diagnostic_columns = st.columns(3)
+if fetch_summary.empty:
+    diagnostic_columns[0].metric("Load duration", "n/a")
+    diagnostic_columns[1].metric("API calls", "0")
+    diagnostic_columns[2].metric("Throttled calls", "0")
+else:
+    total_row = fetch_summary[fetch_summary["source"] == "all_sources"].iloc[0]
+    diagnostic_columns[0].metric("Load duration", f"{total_row['total_duration_ms']:.1f} ms")
+    diagnostic_columns[1].metric("API calls", f"{int(total_row['calls'])}")
+    diagnostic_columns[2].metric("Throttled calls", f"{int(total_row['throttled_calls'])}")
 
 overview_col, details_col = st.columns((1.2, 1))
 
@@ -191,3 +209,19 @@ with dictionary_col:
 
 with st.expander("Tracked item seed list"):
     st.json(tracked_items)
+
+with st.expander("Fetch diagnostics"):
+    st.markdown(
+        "- `http_error` indicates the source returned a non-2xx response.\n"
+        "- `throttled=true` means the source explicitly signaled rate limiting or a 429-style error.\n"
+        "- `partial=true` means the source returned only a partial series for that tracked item."
+    )
+    st.dataframe(fetch_summary, width="stretch", hide_index=True)
+    if fetch_metrics.empty:
+        st.info("No per-call diagnostics were captured for this load.")
+    else:
+        st.dataframe(
+            fetch_metrics.sort_values(["duration_ms", "source"], ascending=[False, True]),
+            width="stretch",
+            hide_index=True,
+        )

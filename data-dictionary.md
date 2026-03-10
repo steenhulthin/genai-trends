@@ -26,3 +26,4 @@ This file documents the exported dashboard data so end users can understand and 
 - The tracked-item definitions should come from `tracked-items.yml`.
 - The first implementation exports one row per topic, tracked item, and time window.
 - `bluesky_frequency` is currently derived from public Bluesky search results and should be treated as an approximation rather than a complete firehose count.
+- Runtime fetch diagnostics are shown in the UI only and are not part of the CSV export.

@@ -531,3 +531,22 @@ But go ahead and add real data. Feel free to go through scaffolding file again.
 Fixed the Streamlit deprecation by replacing the remaining `use_container_width` usage with `width="stretch"` and switched the scaffold to live data collection. `app.py` now uses the current width API and drives the UI from live source fetches, while `genai_trends/data.py` now calls the Bluesky public search endpoint, the GDELT DOC timeline API, and Google Trends via `pytrends`, applies your configured weights, and preserves the partial-data warning behavior instead of failing hard. I also updated `requirements.txt` with the new runtime dependencies and tightened `data-dictionary.md` so the export docs match the live schema and note the Bluesky approximation.
 
 I could not run the app here because Python execution is blocked in this environment, so verification was a manual code pass only. Two implementation caveats remain by design: the Google Trends path depends on the unofficial `pytrends` client, and `bluesky_frequency` is based on public search results rather than full-firehose counts. The implementation details were based on the current Streamlit width guidance, Bluesky public API docs, GDELT DOC API docs, and `pytrends` usage docs.
+
+# Context from my IDE setup:
+
+## Active file: app.py
+
+## Open tabs:
+- app.py: app.py
+- launch.json: .vscode/launch.json
+- SKILL.md: skills/task-decomposition/SKILL.md
+- SKILL.md: skills/implementation-defaults/SKILL.md
+- requirements.txt: requirements.txt
+
+## My request for Codex:
+the dashboard is really performing poorly. Initial data load is very slow and I got "Some source data is unavailable for part of the selected result set. The dashboard is keeping the remaining data visible."
+Add instrumentation so the pain points can be adressed. Verify that API call are not throttled.
+
+Added request-level instrumentation to the live data path and surfaced it in the dashboard. `genai_trends/data.py` now records one metric per source call with duration, status, HTTP status, row count, partial-data flags, and explicit throttling detection. `app.py` now shows total load duration, total API calls, throttled-call count, and a diagnostics panel with both per-source summary and per-call details. I also reused a single `requests.Session` and a single `TrendReq` instance per dataset load so the fetch path does not pay extra setup cost on every tracked item.
+
+The code now detects throttling instead of guessing: Bluesky and GDELT mark throttling on HTTP `429`, and the Google Trends path marks it when the client raises a 429-style error. I could not verify live throttling in this environment because I still cannot run the app or make the full dashboard request loop here, so what is verified is the detection logic and reporting path, not the current live status of your API calls. On your next real run, open the new `Fetch diagnostics` panel and check `throttled_calls`; if it is `0`, the warning is coming from partial or failed calls rather than explicit rate limiting. The likely first pain point is still request volume: the dashboard currently makes one call per tracked item per source, so the new diagnostics should show you exactly which source dominates initial load time.
