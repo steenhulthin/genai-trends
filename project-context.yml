@@ -1,0 +1,75 @@
+project:
+  name: genai-trends
+  purpose: >
+    Help users understand which generative AI topics and terms are gaining
+    or losing momentum over time.
+
+topics:
+  predefined: true
+  initial:
+    - prompt engineering
+    - advanced software production with agents
+    - general
+
+tracked_items:
+  allowed_forms:
+    - single_word
+    - short_phrase
+  examples:
+    - vibe coding
+    - Ralph Wiggum Loop
+
+data_sources:
+  priority_order:
+    - social_media
+    - news_mentions
+    - google_trends
+  grouping_required: true
+
+metrics:
+  source_specific:
+    - frequency
+  composite_score:
+    formula: >
+      social_frequency * social_factor +
+      news_frequency * news_factor +
+      google_trends_frequency * google_trends_factor
+    factors_fixed: false
+
+time:
+  granularity:
+    default: daily
+    allowed:
+      - daily
+      - weekly
+      - monthly
+  reload_behavior:
+    on_page_load: true
+    on_filter_change: true
+    on_browser_refresh: true
+
+user_capabilities:
+  - topic_drilldown
+  - granularity_filter
+  - date_range_filter
+  - data_export
+
+deployment:
+  default_stack: streamlit
+  default_host: share_streamlit_io
+  allowed_stacks:
+    - streamlit
+    - stlite
+    - shinylive
+    - wasm
+    - static_site
+  allowed_hosts:
+    - github_pages
+    - share_streamlit_io
+
+open_questions:
+  - Which exact providers should be used for social media data?
+  - Which exact providers should be used for news data?
+  - Which export format should be default in v1?
+  - What factor values should be used for the composite score?
+
