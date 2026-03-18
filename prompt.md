@@ -1117,3 +1117,25 @@ I found one last consistency issue: the internal metadata still described topic 
 Changed the dashboard to a weekly two-series comparison. `app.py` now uses a `Time window (weeks)` slider, aggregates at weekly granularity, merges the terms into `Claude + Anthropic` versus `ChatGPT + OpenAI`, and removes the topic selector, current ranking, and selected-topic section.
 
 I also aligned `project-context.yml`, `README.md`, `spec.md`, `goals.md`, `technology-choices.md`, and `data-dictionary.md` with the new weekly comparison model. Verification was a static sweep for leftover selected-topic/daily-window references; I did not run the app in this workspace.
+
+# Context from my IDE setup:
+
+## Active file: app.py
+
+## Open tabs:
+- app.py: app.py
+- tracked-items.yml: tracked-items.yml
+- README.md: README.md
+- prompt.md: prompt.md
+- project-context.yml: project-context.yml
+
+## My request for Codex:
+The time window should be based on calendar weeks.Start week forty, two thousand and twenty two.Remove the current fetch window.The initial setting should only select the last twelve weeks.
+I’m logging your prompt first, then I’ll update the weekly window logic to use calendar-week boundaries starting at ISO week 40 of 2022, remove the fetch-window date display, and make the default selection the last 12 weeks.
+I’ve isolated the change: the window control should stop being a simple week-count slider and become a calendar-week range selector anchored at ISO week 40 of 2022, with the initial selected range set to the last 12 weeks. I’m patching the app and the config/docs together so the control logic and the written behavior stay aligned.
+The control logic is in. I’m updating the docs/config language now to match the new calendar-week range selector, its 2022-W40 start, and the 12-week default.
+I’ve finished the behavioral change. I’m doing a quick sweep now for leftover “current fetch window” UI and any stale references to the old simple week-count slider.
+The app change is complete. I’ve verified the old fetch-window display is gone and the new control starts at `2022-W40` with the latest 12 weeks selected by default.
+Changed the period control to a calendar-week range slider that starts at `2022-W40`, removed the `Current fetch window` UI, and set the default selected range to the latest `12` weeks. `app.py` now computes week-aligned start/end dates from the selected calendar-week range instead of using the old rolling week-count slider.
+
+I also aligned `project-context.yml`, `README.md`, `spec.md`, and `goals.md` with the new calendar-week behavior. Verification was a static sweep for leftover `Current fetch window` and old week-count slider references; I did not run the app in this workspace.

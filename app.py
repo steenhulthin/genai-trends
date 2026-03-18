@@ -185,6 +185,21 @@ def tracked_topic_chip_markup(topic_names: list[str]) -> str:
     return "".join(f'<span class="chip mono">{topic_name}</span>' for topic_name in topic_names)
 
 
+def week_label(week_start: date) -> str:
+    iso_year, iso_week, _ = week_start.isocalendar()
+    return f"{iso_year}-W{iso_week:02d}"
+
+
+def available_calendar_weeks(start_year: int, start_week: int, end_date: date) -> list[date]:
+    week_starts: list[date] = []
+    current = date.fromisocalendar(start_year, start_week, 1)
+    end_week_start = end_date - timedelta(days=end_date.weekday())
+    while current <= end_week_start:
+        week_starts.append(current)
+        current += timedelta(days=7)
+    return week_starts
+
+
 def build_comparison_summary(frame: pd.DataFrame, comparison_groups: list[dict[str, object]]) -> pd.DataFrame:
     group_lookup: dict[str, str] = {}
     for group in comparison_groups:
@@ -234,21 +249,22 @@ today = date.today()
 
 with st.sidebar:
     st.header("Controls")
-    window_weeks = st.slider(
-        "Time window (weeks)",
-        min_value=4,
-        max_value=int(context["time"].get("max_fetch_window_weeks", 52)),
-        value=int(context["time"]["fetch_window_weeks"]),
-        step=1,
+    calendar_weeks = available_calendar_weeks(
+        start_year=int(context["time"]["calendar_start_year"]),
+        start_week=int(context["time"]["calendar_start_week"]),
+        end_date=today,
     )
-    st.caption("The comparison runs in weekly buckets. The default window is roughly half a year.")
-    period_start = today - timedelta(days=(window_weeks * 7) - 1)
-    period_end = today
-    st.date_input(
-        "Current fetch window",
-        value=(period_start, period_end),
-        disabled=True,
+    default_selected_weeks = min(int(context["time"]["default_selected_weeks"]), len(calendar_weeks))
+    default_value = (calendar_weeks[-default_selected_weeks], calendar_weeks[-1])
+    selected_week_range = st.select_slider(
+        "Calendar weeks",
+        options=calendar_weeks,
+        value=default_value,
+        format_func=week_label,
     )
+    st.caption("The comparison runs in calendar-week buckets starting at 2022-W40. The default selection is the last 12 weeks.")
+    period_start = selected_week_range[0]
+    period_end = min(today, selected_week_range[1] + timedelta(days=6))
 
 data, load_status = get_dataset(
     period_start=period_start,
@@ -265,7 +281,7 @@ LOGGER.info(
         "granularity": "weekly",
         "period_start": period_start.isoformat(),
         "period_end": period_end.isoformat(),
-        "window_weeks": window_weeks,
+        "window_weeks": len(pd.date_range(period_start, selected_week_range[1], freq="W-MON")),
         "rows": int(data.shape[0]),
     },
 )
@@ -312,6 +328,7 @@ latest_values = {
     str(row["comparison_group"]): numeric_metric(row["news_mentions_frequency"])
     for _, row in latest_group_snapshot.iterrows()
 }
+selected_week_count = len(pd.date_range(period_start, selected_week_range[1], freq="W-MON"))
 
 tracked_terms = [
     item
@@ -338,7 +355,7 @@ metric_columns = st.columns(4)
 metric_columns[0].metric("Tracked terms", f"{len(tracked_terms)}")
 metric_columns[1].metric(group_order[0], format_metric_value(latest_values.get(group_order[0])))
 metric_columns[2].metric(group_order[1], format_metric_value(latest_values.get(group_order[1])))
-metric_columns[3].metric("Window", f"{window_weeks} weeks")
+metric_columns[3].metric("Window", f"{selected_week_count} weeks")
 
 st.subheader("Weekly comparison")
 st.markdown(

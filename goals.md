@@ -26,7 +26,9 @@ The dashboard should help users identify which major AI terms are increasing in 
   - `OpenAI`
 - The dashboard headline should frame the product as `Claude versus ChatGPT`.
 - Users can compare `Claude + Anthropic` against `ChatGPT + OpenAI`.
-- Users can adjust the time window with a weekly slider that defaults to roughly half a year.
+- Users can adjust the time window with a calendar-week range slider.
+- The calendar-week selector should start at `2022-W40`.
+- The initial selection should cover only the last `12` weeks.
 - Users can view trend data over time at weekly granularity.
 - The primary interface presents information through charts, cards, or structured lists rather than raw data tables.
 - The visual tone feels cheerful, nerdy, and welcoming to software developers.

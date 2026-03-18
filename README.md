@@ -22,7 +22,8 @@ The live comparison merges them into two weekly series:
 
 - Topic definitions and tracked items are config-driven.
 - The dashboard headline is `Claude versus ChatGPT`.
-- The fetch window is controlled by a weekly slider and defaults to roughly half a year.
+- The comparison period is controlled by a calendar-week range slider starting at `2022-W40`.
+- The initial selected range covers the last `12` weeks.
 - The dashboard runs at fixed weekly granularity.
 - The app keeps partial data visible when Guardian responses are incomplete or unavailable.
 - Runtime instrumentation is written to log files instead of being rendered in the UI.

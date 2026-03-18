@@ -57,8 +57,9 @@ time:
     default: weekly
     allowed:
       - weekly
-  fetch_window_weeks: 26
-  max_fetch_window_weeks: 52
+  calendar_start_year: 2022
+  calendar_start_week: 40
+  default_selected_weeks: 12
   reload_behavior:
     on_page_load: true
     on_filter_change: true

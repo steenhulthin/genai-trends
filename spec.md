@@ -16,8 +16,7 @@
   - `ChatGPT + OpenAI`
 - The dashboard must allow users to:
   - compare the two merged groups within the same time window
-  - adjust the time window with a weekly slider
-  - inspect the currently active fetch window
+  - adjust the time window with a calendar-week range slider
 - The primary dashboard UI must not render raw data tables as part of the normal on-screen experience.
 - The default time granularity must be weekly.
 - Data must be loaded when the dashboard page is loaded.
@@ -63,7 +62,8 @@
 - Agents should treat the topic list as predefined, flat, and not inferred from the data.
 - Store the concrete topic seed list in `tracked-items.yml` so it is easy to change later.
 - The initial tracked-item seed list should contain exactly the same four values as the topic list.
-- The current implementation uses a weekly time-window slider with a default span of roughly half a year.
+- The current implementation uses a calendar-week range slider that starts at `2022-W40`.
+- The initial selected range covers the latest `12` weeks.
 - The intended information architecture is a flat topic-first browse experience rather than a deeper topic-to-subtopic hierarchy.
 
 ## Deferred Options
