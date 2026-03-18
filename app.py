@@ -257,7 +257,7 @@ def render_group_card(group_frame: pd.DataFrame, label: str) -> None:
                 ),
             ),
             height=240,
-            use_container_width=True,
+            width="stretch",
         )
 
 
@@ -314,9 +314,6 @@ if int(load_status.get("cache_rows_used", 0)) > 0 and bool(load_status.get("live
     st.info(
         "Using prefetched Guardian history for the older weeks in this window and a live Guardian refresh for the newest weekly bucket."
     )
-elif int(load_status.get("cache_rows_used", 0)) > 0:
-    st.info("Using prefetched Guardian history for the selected window.")
-
 partial_data_rows = data[data["partial_data_warning"]]
 if not partial_data_rows.empty:
     st.warning(
@@ -425,7 +422,7 @@ else:
             ),
         ),
         height=360,
-        use_container_width=True,
+        width="stretch",
     )
 
 st.subheader("Weekly group readout")
@@ -442,5 +439,6 @@ for index, group_name in enumerate(group_order):
             st.info(f"No data is available yet for {group_name}.")
         else:
             render_group_card(group_frame, group_name)
+
 
 

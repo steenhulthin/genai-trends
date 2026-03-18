@@ -1222,3 +1222,26 @@ Okay, it ran. please do whatever it needs to be done now.
 Implemented the next step. `genai_trends/data.py` now loads `data/guardian_prefetch_weekly.csv` as the historical base, filters it to the selected weekly window, and only calls Guardian for the tail beyond the snapshot coverage, with the last cached week refreshed on overlap. The merge keeps cached values if a live refresh fails, so the newest cached bucket is not blanked out. `app.py` now keys its cached dataset on the snapshot file version and shows whether the window is coming from prefetched history only or prefetched history plus a live refresh.
 
 `README.md` now documents that behavior. I only did static verification here; I could not run the app or a Python compile step in this workspace. The next thing to do on your side is rerun `streamlit run app.py` and check that the selected window loads from the snapshot and that moving past the snapshot date only refreshes the latest week.
+# Context from my IDE setup:
+
+## Active file: app.py
+
+## Open tabs:
+- app.py: app.py
+- guardian_prefetch_weekly.csv: data/guardian_prefetch_weekly.csv
+- prefetch_data.py: prefetch_data.py
+- prefetch.py: genai_trends/prefetch.py
+- data.py: genai_trends/data.py
+
+## My request for Codex:
+1. REmove the "Using prefetched Guardian history for the selected window.". 
+2. fix: 
+2026-03-18 11:49:23.017 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'` or specify an integer width.
+3. clean up the project
+Removed the cache-only banner from the app, so the UI now only shows the mixed cache-plus-live notice when a live tail refresh is actually being used. I also replaced both `use_container_width=True` calls in `app.py` with `width="stretch"` to match the Streamlit deprecation guidance.
+
+For cleanup, I removed dead helper functions and an unused import from `genai_trends/data.py` that were left over from earlier dashboard iterations. I only did static verification here; I did not run the app in this workspace.

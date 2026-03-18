@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import date, timedelta
+from datetime import date
 from json import loads
 from pathlib import Path
 from time import perf_counter, sleep
@@ -671,14 +671,6 @@ def generate_dataset(
     return dataset, asdict(status)
 
 
-def build_topic_summary(frame: pd.DataFrame) -> pd.DataFrame:
-    return (
-        frame.groupby(["period_end", "topic"], as_index=False)["news_mentions_frequency"]
-        .sum()
-        .sort_values("period_end")
-    )
 
 
-def build_export_frame(frame: pd.DataFrame) -> pd.DataFrame:
-    return frame[DATASET_COLUMNS].sort_values(["period_end", "tracked_item"]).reset_index(drop=True)
 
