@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
 from genai_trends.config import load_project_context, load_tracked_items
-from genai_trends.data import build_export_frame, build_topic_summary, generate_dataset
+from genai_trends.data import build_topic_summary, generate_dataset
 from genai_trends.logging_utils import get_logger
 
 
@@ -152,13 +151,13 @@ def get_tracked_items() -> dict:
 
 
 @st.cache_data(show_spinner=False)
-def get_dataset(period_start: date, period_end: date, granularity: str) -> tuple[pd.DataFrame, dict]:
+def get_dataset(period_start: date, period_end: date) -> tuple[pd.DataFrame, dict]:
     return generate_dataset(
         context=get_context(),
         tracked_items=get_tracked_items(),
         period_start=period_start,
         period_end=period_end,
-        granularity=granularity,
+        granularity="daily",
     )
 
 
@@ -229,14 +228,7 @@ with st.sidebar:
     st.header("Controls")
     topic_options = context["topics"]["initial"]
     selected_topic = st.selectbox("Topic", topic_options, index=0)
-    granularity_options = context["time"]["granularity"]["allowed"]
-    default_granularity = context["time"]["granularity"]["default"]
-    selected_granularity = st.selectbox(
-        "Granularity",
-        granularity_options,
-        index=granularity_options.index(default_granularity),
-    )
-    st.caption("The live fetch window is fixed to the latest 3 years.")
+    st.caption("The live fetch window is fixed to the latest 1 year.")
     period_start = default_start
     period_end = today
     st.date_input(
@@ -248,7 +240,6 @@ with st.sidebar:
 data, load_status = get_dataset(
     period_start=period_start,
     period_end=period_end,
-    granularity=selected_granularity,
 )
 
 LOGGER.info(
@@ -256,7 +247,7 @@ LOGGER.info(
     extra={
         "event": "dashboard_rendered",
         "topic": selected_topic,
-        "granularity": selected_granularity,
+        "granularity": "daily",
         "period_start": period_start.isoformat(),
         "period_end": period_end.isoformat(),
         "rows": int(data.shape[0]),
@@ -265,7 +256,6 @@ LOGGER.info(
 
 filtered = data[data["topic"] == selected_topic].copy()
 topic_summary = build_topic_summary(data)
-export_frame = build_export_frame(filtered)
 topic_items = tracked_items["topics"][topic_key_for_name(selected_topic)]["items"]
 
 partial_data_rows = filtered[filtered["partial_data_warning"]]
@@ -333,7 +323,7 @@ metric_columns[2].metric(
     top_topic_name,
     f"{top_topic_score:.0f}" if top_topic_name != "n/a" else None,
 )
-metric_columns[3].metric("Export rows", f"{len(export_frame):,}")
+metric_columns[3].metric("Resolution", "Daily")
 
 overview_col, ranking_col = st.columns((1.3, 1))
 
@@ -376,53 +366,6 @@ if selected_latest_row.empty:
     st.info("No Guardian detail is available for the current selection yet.")
 else:
     render_topic_detail_card(filtered, selected_latest_row.iloc[0])
-
-st.subheader("Exports")
-export_col, dictionary_col = st.columns(2)
-
-with export_col:
-    with st.container(border=True):
-        st.markdown('<div class="panel-hook"></div>', unsafe_allow_html=True)
-        st.markdown("### Filtered CSV")
-        st.markdown(
-            '<div class="section-note">Download the current topic slice for spreadsheets, notebooks, or your own scripts.</div>',
-            unsafe_allow_html=True,
-        )
-        st.download_button(
-            label="Download filtered CSV",
-            data=export_frame.to_csv(index=False).encode("utf-8"),
-            file_name=f"genai-trends-{selected_topic.replace(' ', '-')}.csv",
-            mime="text/csv",
-            width="stretch",
-        )
-        st.caption(f"Includes {len(export_frame):,} rows for the current topic and window.")
-
-with dictionary_col:
-    with st.container(border=True):
-        st.markdown('<div class="panel-hook"></div>', unsafe_allow_html=True)
-        st.markdown("### Data dictionary")
-        st.markdown(
-            '<div class="section-note">Keep the schema documentation close to the export so the dataset stays understandable outside the app.</div>',
-            unsafe_allow_html=True,
-        )
-        with (Path(__file__).resolve().parent / "data-dictionary.md").open("rb") as handle:
-            st.download_button(
-                label="Download data dictionary",
-                data=handle.read(),
-                file_name="data-dictionary.md",
-                mime="text/markdown",
-                width="stretch",
-            )
-        st.markdown(
-            """
-            <div class="note-panel">
-                <strong>Current assumptions</strong><br/>
-                The simplified implementation uses Guardian as the only live source and treats each predefined topic
-                as the tracked term shown in the dashboard and export.
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
 with st.expander("Tracked terms"):
     for topic_name in context["topics"]["initial"]:

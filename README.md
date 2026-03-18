@@ -17,7 +17,8 @@ The app tracks exactly these five predefined topics:
 ## Current Status
 
 - Topic definitions and tracked items are config-driven.
-- The fetch window is currently fixed to the latest `3` years.
+- The fetch window is currently fixed to the latest `1` year.
+- The dashboard runs at fixed daily granularity.
 - The app keeps partial data visible when Guardian responses are incomplete or unavailable.
 - Runtime instrumentation is written to log files instead of being rendered in the UI.
 
@@ -73,20 +74,6 @@ Main project files:
 - `technology-choices.md`: stack and provider decisions
 - `data-dictionary.md`: exported CSV schema documentation
 - `AGENTS.md`: repository-wide agent rules
-
-## Export Schema
-
-The filtered export is CSV and currently includes:
-
-- `topic`
-- `tracked_item`
-- `time_granularity`
-- `period_start`
-- `period_end`
-- `news_mentions_frequency`
-- `partial_data_warning`
-
-See `data-dictionary.md` for details.
 
 ## Known Limitations
 

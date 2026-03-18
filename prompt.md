@@ -1048,3 +1048,28 @@ The window expansion is in. I’m doing one quick consistency pass now for any l
 Expanded the fetch window to three years by setting `fetch_window_days: 1095` and updating the matching UI and documentation text in `app.py`, `spec.md`, and `README.md`.
 
 I only did a static consistency pass here; I did not run the app in this workspace.
+
+# Context from my IDE setup:
+
+## Active file: app.py
+
+## Open tabs:
+- app.py: app.py
+- tracked-items.yml: tracked-items.yml
+- README.md: README.md
+- prompt.md: prompt.md
+- project-context.yml: project-context.yml
+
+## My request for Codex:
+Decrease the time span of data to one year. Remove the exports section. Remove granularity, always have one day of granularity.
+I’m logging your prompt first, then I’ll update the configured time window, remove the export/granularity UI, and sweep the docs/config for the assumptions those controls currently encode.
+I found the actual change points: the configured day count, the sidebar copy, and one spec note. I’m updating those together so the new three-year window is both functional and documented.
+I’ve got the precise drift: the app still imports/exports CSV support, the sidebar still exposes granularity, and the config/spec docs still advertise both. I’m patching the UI and the configuration surface together so the product is actually fixed at daily resolution with a one-year window.
+I’m editing the main app now. The user-visible changes are straightforward: fixed daily resolution, one-year window copy, no export area, and no export-count metric. After that I’ll bring the config/docs into line so they stop promising removed features.
+The app-facing changes are in. I’m doing a cleanup pass now for dead export code and any remaining doc/config references to adjustable granularity or downloadable exports.
+I found two more stale layers: dead export helper code and docs that still describe downloadable export artifacts. I’m removing the unused helper and tightening the remaining docs so they reflect the current UI instead of the old export-capable one.
+One nested edit hit the same flaky file-write path as before. I’m splitting this cleanup into smaller patches; the target changes are just doc alignment plus removing one unused helper.
+The UI cleanup is done. I’ve verified the sidebar is now topic-only, the export area is gone, and the configuration surface is narrowed to a one-year daily-only dashboard; the only leftover granularity logic is internal helper code in the data layer, which the app no longer exposes.
+Changed the dashboard to a fixed one-year, daily-only view. `project-context.yml` now uses `fetch_window_days: 365` with only `daily` allowed, `app.py` no longer shows a granularity selector or the exports section, and the top metrics now show `Resolution: Daily` instead of export rows.
+
+I also aligned `spec.md`, `goals.md`, `README.md`, `technology-choices.md`, and `data-dictionary.md` with the new behavior. I only did a static verification pass here; I did not run the app in this workspace.

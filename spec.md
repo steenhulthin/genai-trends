@@ -14,12 +14,8 @@
 - The dashboard must allow users to:
   - select one of the predefined topics
   - compare the predefined topics within the same time window
-  - select time granularity: daily, weekly, or monthly
   - inspect the currently active fetch window
-  - download the currently filtered data in a standard file format
-- The dashboard must allow users to download `data-dictionary.md`.
 - The primary dashboard UI must not render raw data tables as part of the normal on-screen experience.
-- Tabular data may be used for exported files or internal debugging, but not as the main presentation layer.
 - The default time granularity must be daily.
 - Data must be loaded when the dashboard page is loaded.
 - Data must be reloaded when the user changes filters or refreshes the browser.
@@ -29,7 +25,7 @@
 - `topic`: one of the five predefined tracked terms.
 - `tracked item`: the same value as the topic in the first simplified version.
 - `news mention frequency`: the Guardian result count or equivalent Guardian-native count returned for one topic within one time window.
-- `time window`: the selected aggregation interval, initially daily, weekly, or monthly.
+- `time window`: the selected aggregation interval, fixed to daily in the simplified version.
 
 ## Metrics
 
@@ -50,9 +46,6 @@
 
 - Data inputs should come from `Guardian Open Platform` for the first version.
 - The first implementation should organize data by topic before presenting comparisons.
-- Export output should use `CSV` in the first version.
-- The project should include a `data-dictionary.md` file that documents export columns, meanings, and examples.
-- The UI should expose `data-dictionary.md` as a downloadable artifact.
 - The main UI should prefer charts, cards, badges, and structured lists over generic tables.
 
 ## Validation
@@ -66,7 +59,7 @@
 - Agents should treat the topic list as predefined, flat, and not inferred from the data.
 - Store the concrete topic seed list in `tracked-items.yml` so it is easy to change later.
 - The initial tracked-item seed list should contain exactly the same five values as the topic list.
-- The current implementation keeps the live fetch window fixed to the latest three years.
+- The current implementation keeps the live fetch window fixed to the latest one year.
 - The intended information architecture is a flat topic-first browse experience rather than a deeper topic-to-subtopic hierarchy.
 
 ## Deferred Options

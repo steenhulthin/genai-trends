@@ -26,9 +26,7 @@ The dashboard should help users identify which major AI terms are increasing in 
   - `ChatGPT`
 - Users can select one predefined topic and inspect its trend over time.
 - Users can compare the predefined topics within the same Guardian-backed time window.
-- Users can view trend data over time with adjustable granularity.
-- Users can export the currently filtered data in a standard file format.
-- Users can download the project `data-dictionary.md` from the UI.
+- Users can view trend data over time at daily granularity.
 - The primary interface presents information through charts, cards, or structured lists rather than raw data tables.
 - The visual tone feels cheerful, nerdy, and welcoming to software developers.
 - The dashboard degrades gracefully with a friendly fallback state or error message when Guardian data cannot be loaded.

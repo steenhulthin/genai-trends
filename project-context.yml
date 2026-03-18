@@ -48,9 +48,7 @@ time:
     default: daily
     allowed:
       - daily
-      - weekly
-      - monthly
-  fetch_window_days: 1095
+  fetch_window_days: 365
   reload_behavior:
     on_page_load: true
     on_filter_change: true
@@ -59,10 +57,7 @@ time:
 user_capabilities:
   - topic_selection
   - topic_comparison
-  - granularity_filter
   - current_window_visibility
-  - data_export
-  - data_dictionary_download
 
 deployment:
   default_stack: streamlit
@@ -80,11 +75,6 @@ deployment:
     server_fetching_allowed: true
     server_caching_allowed: true
     soft_prefer_client_or_static_fetching: true
-
-export:
-  default_format: csv
-  documentation_file: data-dictionary.md
-  documentation_downloadable_in_ui: true
 
 seed_option:
   tracked_items: simplified_guardian_five

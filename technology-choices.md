@@ -6,8 +6,6 @@
 - The project may use static-site-friendly technologies such as `stlite`, `shinylive`, WebAssembly-based approaches, or other true static site technologies if performance is acceptable.
 - A Streamlit deployment on `share.streamlit.io` is allowed.
 - The first and only live data provider is `Guardian Open Platform`.
-- The first export format is `CSV`.
-- The project must include a downloadable `data-dictionary.md`.
 - The primary metric is Guardian news-mention frequency.
 - A cross-source composite score is not required in the simplified Guardian-only version.
 - The initial tracked-item seed list should live in `tracked-items.yml`.
@@ -18,6 +16,7 @@
   - `Claude`
   - `ChatGPT`
 - The primary UI should present information with charts, cards, and structured lists rather than on-screen data tables.
+- The primary UI does not expose export or download controls in the simplified version.
 - The visual direction should be cheerful, nerdy, and welcoming to software developers.
 
 ## Preferred Choices
