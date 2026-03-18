@@ -66,7 +66,7 @@
 - Agents should treat the topic list as predefined, flat, and not inferred from the data.
 - Store the concrete topic seed list in `tracked-items.yml` so it is easy to change later.
 - The initial tracked-item seed list should contain exactly the same five values as the topic list.
-- The current implementation keeps the live fetch window fixed to the latest seven days while the collectors are being stabilized.
+- The current implementation keeps the live fetch window fixed to the latest three years.
 - The intended information architecture is a flat topic-first browse experience rather than a deeper topic-to-subtopic hierarchy.
 
 ## Deferred Options

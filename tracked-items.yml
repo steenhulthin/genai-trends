@@ -1,33 +1,29 @@
 topics:
-  prompt_engineering:
+  AI:
     update_mode: manual
     items:
-      - system prompt
-      - tool use
-      - evals
-      - structured outputs
-  advanced_software_production_with_agents:
+      - AI
+  Anthropic:
     update_mode: manual
     items:
-      - coding agent
-      - multi-agent
-      - worktrees
-      - MCP
-      - computer use
-      - background mode
-  general:
+      - Anthropic
+  OpenAI:
     update_mode: manual
     items:
-      - Codex
+      - OpenAI
+  Claude:
+    update_mode: manual
+    items:
       - Claude
-      - Gemini
-      - Deep Research
+  ChatGPT:
+    update_mode: manual
+    items:
+      - ChatGPT
 
 notes:
   mutable: true
-  overlapping_topic_membership: allowed
-  overlap_rule: include_in_all_relevant_topics
+  overlapping_topic_membership: not_required
   future_direction: >
-    Keep the first version manually curated. A later iteration may evaluate
-    tracked items dynamically, but the initial implementation should treat this
-    file as the editable source of truth.
+    Keep the first version manually curated. A later iteration may expand the
+    tracked-term list, but the initial implementation should treat this file as
+    the editable source of truth.

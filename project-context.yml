@@ -1,64 +1,47 @@
 project:
   name: genai-trends
   purpose: >
-    Help users understand which generative AI topics and terms are gaining
-    or losing momentum over time.
+    Help users understand which of a small set of predefined generative AI
+    terms are gaining or losing momentum in Guardian coverage over time.
 
 topics:
   predefined: true
   initial:
-    - prompt engineering
-    - advanced software production with agents
-    - general
+    - AI
+    - Anthropic
+    - OpenAI
+    - Claude
+    - ChatGPT
 
 tracked_items:
   allowed_forms:
     - single_word
-    - short_phrase
+    - product_or_company_name
   examples:
-    - vibe coding
-    - Ralph Wiggum Loop
+    - OpenAI
+    - ChatGPT
   source_file: tracked-items.yml
   seed_mode: manual_seed_list
-  future_direction: may_be_evaluated_dynamically_later
-  overlapping_topic_membership: allowed
-  overlap_rule: include_in_all_relevant_topics
+  future_direction: may_be_expanded_later
+  overlapping_topic_membership: not_required
 
 data_sources:
   priority_order:
-    - social_media
     - news_mentions
-    - google_trends
   grouping_required: true
   selected:
-    social_media: mastodon
     news_mentions: guardian
-    google_trends: hacker_news
   alternatives:
-    social_media:
-      - reddit
     news_mentions:
       - gdelt_web_ngrams
-    google_trends:
-      - serpapi
-      - dataforseo
   deferred:
-    - gdelt_context
+    - additional_sources
 
 metrics:
   source_specific:
-    - frequency
-  composite_score:
-    formula: >
-      social_frequency * social_factor +
-      news_frequency * news_factor +
-      google_trends_frequency * google_trends_factor
-    factors_fixed: true
-    factors:
-      social: 0.5
-      news: 0.3
-      google_trends: 0.2
-    on_missing_source: warn_and_keep_remaining_data
+    - news_mentions_frequency
+  primary_metric: news_mentions_frequency
+  on_missing_source: warn_and_keep_remaining_data
 
 time:
   granularity:
@@ -67,15 +50,15 @@ time:
       - daily
       - weekly
       - monthly
-  fetch_window_days: 7
+  fetch_window_days: 1095
   reload_behavior:
     on_page_load: true
     on_filter_change: true
     on_browser_refresh: true
 
 user_capabilities:
-  - topic_drilldown
-  - hierarchical_topic_navigation
+  - topic_selection
+  - topic_comparison
   - granularity_filter
   - current_window_visibility
   - data_export
@@ -104,4 +87,4 @@ export:
   documentation_downloadable_in_ui: true
 
 seed_option:
-  tracked_items: A
+  tracked_items: simplified_guardian_five

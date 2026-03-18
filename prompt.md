@@ -1002,3 +1002,49 @@ The spec documents are internally aligned now. I also hit one environment detail
 Updated `spec.md`, `goals.md`, and `technology-choices.md` to match the simplified scope: `Guardian Open Platform` is now the only live source, the topic set is now exactly `AI`, `Anthropic`, `OpenAI`, `Claude`, and `ChatGPT`, and the docs now describe a flat Guardian-only dashboard instead of the earlier multi-source hierarchy.
 
 I also removed the requirement for multi-source composite scoring from the spec docs and replaced it with Guardian news-mention frequency as the primary metric. Verification was a direct read-through of the three updated files plus a stale-term search; I did not change runtime config or app code in this pass.
+
+# Context from my IDE setup:
+
+## Active file: technology-choices.md
+
+## Open tabs:
+- technology-choices.md: technology-choices.md
+- spec.md: spec.md
+- prompt.md: prompt.md
+- goals.md: goals.md
+- app.py: app.py
+
+## My request for Codex:
+Implement according to the new specifications. 
+I’m logging your prompt to the repo transcript first, then I’ll inspect the current app and data/config files to map the old multi-source flow onto the new Guardian-only five-term scope.
+I’ve got the main drift points. The implementation still assumes three sources all the way through config, dataset shape, export schema, and UI, so this needs a coordinated simplification rather than a one-file tweak.
+I’ve finished the read-through. I’m patching the runtime config, Guardian data loader, export schema, and UI together so the app stops depending on the removed sources instead of just hiding them.
+The first bulk patch tripped over the file-edit layer, so I’m splitting the implementation into smaller patches. I’m not changing direction; this is just reducing the edit size so the workspace accepts it cleanly.
+I’m into the runtime files now. The next two edits replace the old three-source dataset builder and then remove the matching assumptions from the Streamlit UI.
+The Guardian data module is the part fighting the patch tool, so I’m switching to smaller in-place hunks there instead of a full-file replace. That keeps the change set equivalent without relying on one giant patch.
+I isolated the tooling issue: nested-file patches are failing through `apply_patch`, but the workspace itself is writable. I’m finishing the remaining implementation updates through direct file writes so the actual code changes still land cleanly.
+The code and config rewrites are in. I’m doing a verification sweep now for stale three-source references and then I’ll try a Python syntax check on the touched modules.
+I found one real edge case during the static pass: if Guardian data is missing for the current load, the new single-source detail card can still try to coerce `None` into a float. I’m hardening that before I close verification.
+Implemented the simplified Guardian-only version across the app and config. `project-context.yml` and `tracked-items.yml` now define only the five predefined terms, `genai_trends/data.py` now fetches Guardian data only and exports just `news_mentions_frequency` plus `partial_data_warning`, and `app.py` now renders a comparison-first Guardian dashboard without the old multi-source/source-breakout UI.
+
+I also aligned `data-dictionary.md`, `README.md`, and `.streamlit/secrets.toml.example` with the new runtime behavior. Verification was a stale-reference sweep across the touched files plus a static read-through of the new data flow. I could not run a Python syntax check or app smoke test here because the exposed `python` command was not executable in this workspace.
+
+# Context from my IDE setup:
+
+## Active file: app.py
+
+## Open tabs:
+- app.py: app.py
+- tracked-items.yml: tracked-items.yml
+- README.md: README.md
+- prompt.md: prompt.md
+- project-context.yml: project-context.yml
+
+## My request for Codex:
+Expand the data window to three years.
+I’m logging your prompt first, then I’ll update the configured fetch window and sweep the repo for hard-coded “7 days” language so the app and docs stay aligned.
+I found the actual change points: the configured day count, the sidebar copy, and one spec note. I’m updating those together so the new three-year window is both functional and documented.
+The window expansion is in. I’m doing one quick consistency pass now for any leftover 7-day wording before I wrap it up.
+Expanded the fetch window to three years by setting `fetch_window_days: 1095` and updating the matching UI and documentation text in `app.py`, `spec.md`, and `README.md`.
+
+I only did a static consistency pass here; I did not run the app in this workspace.

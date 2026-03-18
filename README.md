@@ -1,24 +1,24 @@
 # genai-trends
 
-Streamlit dashboard for tracking trend signals around predefined generative AI topics and tracked items.
+Streamlit dashboard for tracking Guardian news-mention signals around a small set of predefined generative AI terms.
 
-The current implementation combines:
+The current implementation uses:
 
-- `Mastodon` hashtag timelines for social-media mentions
 - `Guardian Open Platform` for news mentions
-- `Hacker News` story search for discussion-oriented mention counts
 
-The app groups those signals into three topics:
+The app tracks exactly these five predefined topics:
 
-- `prompt engineering`
-- `advanced software production with agents`
-- `general`
+- `AI`
+- `Anthropic`
+- `OpenAI`
+- `Claude`
+- `ChatGPT`
 
 ## Current Status
 
 - Topic definitions and tracked items are config-driven.
-- The fetch window is currently fixed to the latest `7` days.
-- The app keeps partial data visible when one or more providers fail.
+- The fetch window is currently fixed to the latest `3` years.
+- The app keeps partial data visible when Guardian responses are incomplete or unavailable.
 - Runtime instrumentation is written to log files instead of being rendered in the UI.
 
 ## Run Locally
@@ -37,8 +37,6 @@ Required keys:
 
 Optional:
 
-- `MASTODON_BASE_URL`
-- `MASTODON_ACCESS_TOKEN`
 - `APP_LOG_LEVEL`
 - `APP_ENV`
 
@@ -68,8 +66,8 @@ Default logging behavior:
 
 Main project files:
 
-- `project-context.yml`: project-level configuration and selected providers
-- `tracked-items.yml`: editable tracked-item source of truth
+- `project-context.yml`: project-level configuration and selected provider
+- `tracked-items.yml`: editable tracked-term source of truth
 - `spec.md`: implementation-facing specification
 - `goals.md`: product goals and success criteria
 - `technology-choices.md`: stack and provider decisions
@@ -85,19 +83,13 @@ The filtered export is CSV and currently includes:
 - `time_granularity`
 - `period_start`
 - `period_end`
-- `social_media_frequency`
 - `news_mentions_frequency`
-- `google_trends_frequency`
-- `composite_score`
-- `available_sources`
 - `partial_data_warning`
 
-See `data-dictionary.md` for details. The `google_trends_frequency` column name is retained for compatibility even though the current provider is `Hacker News`.
+See `data-dictionary.md` for details.
 
 ## Known Limitations
 
 - Live data quality depends on external provider behavior and provider limits.
 - `Guardian Open Platform` is used for simplicity; `GDELT Web NGrams 3.0` remains a later option for higher-scale news ingestion.
-- Mastodon counts are derived from normalized hashtags, so multi-word tracked items are queried as compact tags such as `#systemprompt`.
-- `Hacker News` is the current tertiary signal provider; `SerpApi` and `DataForSEO` remain later alternatives if Google Trends data is needed again.
 - The current implementation still fetches on page load rather than using a scheduled ingestion pipeline.
