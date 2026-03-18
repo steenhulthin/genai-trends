@@ -1157,3 +1157,46 @@ I’m logging your prompt first, then I’ll inspect the current chart rendering
 I’ve got the rendering point: the lower group cards inherit Streamlit’s default series color, so I’m switching the comparison charts to explicit colors and reusing the same light blue for `Claude + Anthropic` in both places.
 The chart colors are now explicit instead of implicit. I’m doing a quick read-through to make sure both the top comparison chart and the Claude + Anthropic detail chart are using the same fixed blue mapping.
 The color mapping is confirmed in code now: `Claude + Anthropic` is pinned to the same explicit light blue in both the top comparison chart and its lower detail chart, instead of depending on Streamlit’s defaults.
+
+# Context from my IDE setup:
+
+## Active file: app.py
+
+## Open tabs:
+- app.py: app.py
+- data.py: genai_trends/data.py
+- tracked-items.yml: tracked-items.yml
+- README.md: README.md
+- prompt.md: prompt.md
+
+## My request for Codex:
+Suggest a solution for prefetching the data.So that only data that is newer than the prefetched data is retrieved from the API.
+Recommended solution is an incremental local cache with a watermark per tracked term. Right now `genai_trends/data.py` refetches the entire `[period_start, period_end]` range on every load via `fetch_guardian_series`, so the app has no memory of what it already collected.
+
+Use three layers:
+- `fetch_state`: `tracked_item`, `source`, `newest_seen_published_at`, `last_successful_fetch_at`
+- `raw_guardian_hits`: Guardian article `id`, `tracked_item`, `webPublicationDate`, `fetched_at`
+- `weekly_counts`: pre-aggregated counts per `tracked_item` and week bucket
+
+Then the refresh flow:
+- On first run, backfill from your configured historical start
+- On later runs, fetch only from `newest_seen_published_at - overlap_window` to `now`; use a small overlap like 2-7 days to catch late indexing
+- Deduplicate by Guardian `id`
+- Recompute only the affected weekly buckets, not the whole history
+- Serve the dashboard from `weekly_counts`, not directly from live API results
+
+In this repo, I would put the cache read/write layer next to `genai_trends/data.py`, keep `fetch_guardian_series` as the low-level fetcher, and add an incremental loader that replaces the current full-range loop inside `generate_dataset`. If you want, I can implement this with SQLite next.
+
+# Context from my IDE setup:
+
+## Active file: app.py
+
+## Open tabs:
+- app.py: app.py
+- data.py: genai_trends/data.py
+- tracked-items.yml: tracked-items.yml
+- README.md: README.md
+- prompt.md: prompt.md
+
+## My request for Codex:
+Let's do this. Make code that saves the data from the whole period to a file and put it in a data folder.I'll run the code and save the data, actually.Then in the next iteration you can use that data as a fallback.
