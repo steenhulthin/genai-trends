@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 
 from genai_trends.config import load_project_context, load_tracked_items
-from genai_trends.data import generate_dataset
+from genai_trends.data import generate_dataset, prefetch_snapshot_version
 from genai_trends.logging_utils import get_logger
 
 
@@ -149,7 +149,7 @@ def get_tracked_items() -> dict:
 
 
 @st.cache_data(show_spinner=False)
-def get_dataset(period_start: date, period_end: date) -> tuple[pd.DataFrame, dict]:
+def get_dataset(period_start: date, period_end: date, snapshot_version: str) -> tuple[pd.DataFrame, dict]:
     return generate_dataset(
         context=get_context(),
         tracked_items=get_tracked_items(),
@@ -288,9 +288,11 @@ with st.sidebar:
     period_start = selected_week_range[0]
     period_end = min(today, selected_week_range[1] + timedelta(days=6))
 
+snapshot_version = prefetch_snapshot_version(context, "weekly")
 data, load_status = get_dataset(
     period_start=period_start,
     period_end=period_end,
+    snapshot_version=snapshot_version,
 )
 
 comparison_summary = build_comparison_summary(data, comparison_groups)
@@ -307,6 +309,13 @@ LOGGER.info(
         "rows": int(data.shape[0]),
     },
 )
+
+if int(load_status.get("cache_rows_used", 0)) > 0 and bool(load_status.get("live_fetch_used")):
+    st.info(
+        "Using prefetched Guardian history for the older weeks in this window and a live Guardian refresh for the newest weekly bucket."
+    )
+elif int(load_status.get("cache_rows_used", 0)) > 0:
+    st.info("Using prefetched Guardian history for the selected window.")
 
 partial_data_rows = data[data["partial_data_warning"]]
 if not partial_data_rows.empty:
@@ -433,3 +442,5 @@ for index, group_name in enumerate(group_order):
             st.info(f"No data is available yet for {group_name}.")
         else:
             render_group_card(group_frame, group_name)
+
+

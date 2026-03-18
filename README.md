@@ -72,6 +72,8 @@ This writes:
 
 The export covers the whole configured calendar-week period, starting at `2022-W40` and ending on the day you run the command.
 
+Once the snapshot exists, the dashboard uses it as the historical base for weekly results and only fetches a live Guardian tail when the selected window extends past the snapshot coverage.
+
 ## Logging
 
 The app writes runtime logs to:
@@ -101,4 +103,6 @@ Main project files:
 - Live data quality depends on external provider behavior and provider limits.
 - `Guardian Open Platform` is used for simplicity; `GDELT Web NGrams 3.0` remains a later option for higher-scale news ingestion.
 - The current implementation still fetches on page load rather than using a scheduled ingestion pipeline.
+
+
 

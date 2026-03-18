@@ -1203,3 +1203,22 @@ Let's do this. Make code that saves the data from the whole period to a file and
 Implemented a separate historical prefetch path without changing the live dashboard fetch flow. `genai_trends/prefetch.py` now computes the full configured period starting at `2022-W40`, fetches the weekly Guardian dataset, and writes both `data/guardian_prefetch_weekly.csv` and `data/guardian_prefetch_weekly.metadata.json`. `prefetch_data.py` is the runner you can execute, and `README.md` now documents the command.
 
 Run `python prefetch_data.py` in the repo. I could only do static verification here: the new files read back correctly, but I could not run a compile or smoke test because the Python launcher in this workspace is not executable.
+# Context from my IDE setup:
+
+## Active file: data/guardian_prefetch_weekly.csv
+
+## Active selection of the file:
+
+Claude,Claude,weekly,2022-12-12,2022-12-12,2.0,False
+## Open tabs:
+- guardian_prefetch_weekly.csv: data/guardian_prefetch_weekly.csv
+- app.py: app.py
+- prefetch_data.py: prefetch_data.py
+- prefetch.py: genai_trends/prefetch.py
+- data.py: genai_trends/data.py
+
+## My request for Codex:
+Okay, it ran. please do whatever it needs to be done now.
+Implemented the next step. `genai_trends/data.py` now loads `data/guardian_prefetch_weekly.csv` as the historical base, filters it to the selected weekly window, and only calls Guardian for the tail beyond the snapshot coverage, with the last cached week refreshed on overlap. The merge keeps cached values if a live refresh fails, so the newest cached bucket is not blanked out. `app.py` now keys its cached dataset on the snapshot file version and shows whether the window is coming from prefetched history only or prefetched history plus a live refresh.
+
+`README.md` now documents that behavior. I only did static verification here; I could not run the app or a Python compile step in this workspace. The next thing to do on your side is rerun `streamlit run app.py` and check that the selected window loads from the snapshot and that moving past the snapshot date only refreshes the latest week.
