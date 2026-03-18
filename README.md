@@ -9,16 +9,21 @@ The current implementation uses:
 The app tracks exactly these four predefined topics:
 
 - `Claude`
-- `ChatGPT`
 - `Anthropic`
+- `ChatGPT`
 - `OpenAI`
+
+The live comparison merges them into two weekly series:
+
+- `Claude + Anthropic`
+- `ChatGPT + OpenAI`
 
 ## Current Status
 
 - Topic definitions and tracked items are config-driven.
 - The dashboard headline is `Claude versus ChatGPT`.
-- The fetch window is controlled by a slider and defaults to roughly half a year.
-- The dashboard runs at fixed daily granularity.
+- The fetch window is controlled by a weekly slider and defaults to roughly half a year.
+- The dashboard runs at fixed weekly granularity.
 - The app keeps partial data visible when Guardian responses are incomplete or unavailable.
 - Runtime instrumentation is written to log files instead of being rendered in the UI.
 

@@ -4,7 +4,8 @@
 
 The project should help users understand which of a small set of predefined generative AI terms are gaining or losing momentum in Guardian coverage over time.
 
-The dashboard should present Guardian news-mention data for four predefined terms: `Claude`, `ChatGPT`, `Anthropic`, and `OpenAI`.
+The dashboard should present Guardian news-mention data for four predefined terms: `Claude`, `Anthropic`, `ChatGPT`, and `OpenAI`.
+The main product framing should be `Claude versus ChatGPT`, with `Claude + Anthropic` compared against `ChatGPT + OpenAI`.
 
 ## Audience
 
@@ -20,14 +21,13 @@ The dashboard should help users identify which major AI terms are increasing in 
 - A live dashboard is available.
 - The dashboard covers exactly these four predefined topics:
   - `Claude`
-  - `ChatGPT`
   - `Anthropic`
+  - `ChatGPT`
   - `OpenAI`
 - The dashboard headline should frame the product as `Claude versus ChatGPT`.
-- Users can select one predefined topic and inspect its trend over time.
-- Users can compare the predefined topics within the same Guardian-backed time window.
-- Users can adjust the time window with a slider that defaults to roughly half a year.
-- Users can view trend data over time at daily granularity.
+- Users can compare `Claude + Anthropic` against `ChatGPT + OpenAI`.
+- Users can adjust the time window with a weekly slider that defaults to roughly half a year.
+- Users can view trend data over time at weekly granularity.
 - The primary interface presents information through charts, cards, or structured lists rather than raw data tables.
 - The visual tone feels cheerful, nerdy, and welcoming to software developers.
 - The dashboard degrades gracefully with a friendly fallback state or error message when Guardian data cannot be loaded.

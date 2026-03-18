@@ -6,7 +6,7 @@ This file documents the exported dashboard data so end users can understand and 
 
 - `topic`: predefined topic name
 - `tracked_item`: tracked term being measured; in the simplified first version it matches `topic`
-- `time_granularity`: aggregation level, fixed to `daily` in the current implementation
+- `time_granularity`: aggregation level, fixed to `weekly` in the current implementation
 - `period_start`: start timestamp or date for the aggregated interval
 - `period_end`: end timestamp or date for the aggregated interval
 - `news_mentions_frequency`: Guardian result count for the tracked term in the aggregated interval

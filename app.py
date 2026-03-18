@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from genai_trends.config import load_project_context, load_tracked_items
-from genai_trends.data import build_topic_summary, generate_dataset
+from genai_trends.data import generate_dataset
 from genai_trends.logging_utils import get_logger
 
 
@@ -121,13 +121,6 @@ code, .mono {
     font-size: 0.92rem;
     margin-bottom: 0.7rem;
 }
-
-.note-panel {
-    padding: 1rem 1.1rem;
-    background: var(--panel-strong);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-}
 </style>
 """
 
@@ -157,12 +150,8 @@ def get_dataset(period_start: date, period_end: date) -> tuple[pd.DataFrame, dic
         tracked_items=get_tracked_items(),
         period_start=period_start,
         period_end=period_end,
-        granularity="daily",
+        granularity="weekly",
     )
-
-
-def topic_key_for_name(topic_name: str) -> str:
-    return topic_name.replace(" ", "_")
 
 
 def format_metric_value(value: float | int | None) -> str:
@@ -177,8 +166,8 @@ def numeric_metric(value: float | int | None) -> float:
     return float(value)
 
 
-def movement_copy(topic_frame: pd.DataFrame) -> str:
-    ordered = topic_frame.sort_values("period_end")
+def movement_copy(frame: pd.DataFrame) -> str:
+    ordered = frame.sort_values("period_end")
     if len(ordered) < 2:
         return "Fresh in the current window."
 
@@ -186,9 +175,9 @@ def movement_copy(topic_frame: pd.DataFrame) -> str:
     previous = numeric_metric(ordered.iloc[-2]["news_mentions_frequency"])
     delta = latest - previous
     if delta > 0:
-        return f"Up {delta:.0f} Guardian mentions vs the previous bucket."
+        return f"Up {delta:.0f} weekly mentions vs the previous bucket."
     if delta < 0:
-        return f"Down {abs(delta):.0f} Guardian mentions vs the previous bucket."
+        return f"Down {abs(delta):.0f} weekly mentions vs the previous bucket."
     return "Holding steady across the latest buckets."
 
 
@@ -196,47 +185,64 @@ def tracked_topic_chip_markup(topic_names: list[str]) -> str:
     return "".join(f'<span class="chip mono">{topic_name}</span>' for topic_name in topic_names)
 
 
-def render_topic_detail_card(topic_frame: pd.DataFrame, latest_row: pd.Series) -> None:
+def build_comparison_summary(frame: pd.DataFrame, comparison_groups: list[dict[str, object]]) -> pd.DataFrame:
+    group_lookup: dict[str, str] = {}
+    for group in comparison_groups:
+        label = str(group["label"])
+        for topic in group["topics"]:
+            group_lookup[str(topic)] = label
+
+    working = frame.copy()
+    working["comparison_group"] = working["topic"].map(group_lookup)
+    working = working.dropna(subset=["comparison_group"])
+
+    summary = (
+        working.groupby(["period_end", "comparison_group"], as_index=False)["news_mentions_frequency"]
+        .sum()
+        .sort_values("period_end")
+    )
+    return summary
+
+
+def render_group_card(group_frame: pd.DataFrame, label: str) -> None:
+    latest_row = group_frame.sort_values("period_end").tail(1).iloc[0]
     with st.container(border=True):
         st.markdown('<div class="panel-hook"></div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="item-title">{latest_row["topic"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="item-title">{label}</div>', unsafe_allow_html=True)
         st.markdown(
-            f'<div class="item-subtitle">Guardian-only topic view. {movement_copy(topic_frame)}</div>',
+            f'<div class="item-subtitle">Weekly merged view. {movement_copy(group_frame)}</div>',
             unsafe_allow_html=True,
         )
 
-        metric_columns = st.columns(3)
-        metric_columns[0].metric("Guardian mentions", format_metric_value(latest_row["news_mentions_frequency"]))
-        metric_columns[1].metric("Latest bucket", latest_row["period_end"])
-        metric_columns[2].metric("Partial data", "Yes" if bool(latest_row["partial_data_warning"]) else "No")
+        metric_columns = st.columns(2)
+        metric_columns[0].metric("Weekly mentions", format_metric_value(latest_row["news_mentions_frequency"]))
+        metric_columns[1].metric("Week bucket", latest_row["period_end"])
 
-        history_chart = topic_frame.sort_values("period_end")[["period_end", "news_mentions_frequency"]].copy()
+        history_chart = group_frame.sort_values("period_end")[["period_end", "news_mentions_frequency"]].copy()
         history_chart["period_end"] = pd.to_datetime(history_chart["period_end"])
         history_chart = history_chart.set_index("period_end")
-        st.line_chart(history_chart, height=220, width="stretch")
+        st.line_chart(history_chart, height=240, width="stretch")
 
 
 st.markdown(APP_STYLES, unsafe_allow_html=True)
 
 context = get_context()
+comparison_groups = context["comparison_groups"]
 tracked_items = get_tracked_items()
 
 today = date.today()
 
 with st.sidebar:
     st.header("Controls")
-    topic_options = context["topics"]["initial"]
-    selected_topic = st.selectbox("Topic", topic_options, index=0)
-    window_days = st.slider(
-        "Time window (days)",
-        min_value=30,
-        max_value=int(context["time"].get("max_fetch_window_days", 365)),
-        value=int(context["time"]["fetch_window_days"]),
+    window_weeks = st.slider(
+        "Time window (weeks)",
+        min_value=4,
+        max_value=int(context["time"].get("max_fetch_window_weeks", 52)),
+        value=int(context["time"]["fetch_window_weeks"]),
         step=1,
     )
-    st.caption("Use the slider to compare the latest window. The default is roughly half a year.")
-    default_start = today - timedelta(days=window_days - 1)
-    period_start = default_start
+    st.caption("The comparison runs in weekly buckets. The default window is roughly half a year.")
+    period_start = today - timedelta(days=(window_weeks * 7) - 1)
     period_end = today
     st.date_input(
         "Current fetch window",
@@ -249,26 +255,25 @@ data, load_status = get_dataset(
     period_end=period_end,
 )
 
+comparison_summary = build_comparison_summary(data, comparison_groups)
+group_order = [str(group["label"]) for group in comparison_groups]
+
 LOGGER.info(
     "dashboard_rendered",
     extra={
         "event": "dashboard_rendered",
-        "topic": selected_topic,
-        "granularity": "daily",
+        "granularity": "weekly",
         "period_start": period_start.isoformat(),
         "period_end": period_end.isoformat(),
+        "window_weeks": window_weeks,
         "rows": int(data.shape[0]),
     },
 )
 
-filtered = data[data["topic"] == selected_topic].copy()
-topic_summary = build_topic_summary(data)
-topic_items = tracked_items["topics"][topic_key_for_name(selected_topic)]["items"]
-
-partial_data_rows = filtered[filtered["partial_data_warning"]]
+partial_data_rows = data[data["partial_data_warning"]]
 if not partial_data_rows.empty:
     st.warning(
-        "Some Guardian data is unavailable for part of the selected result set. "
+        "Some Guardian data is unavailable for part of the current result set. "
         "The dashboard is keeping the remaining history visible."
     )
 
@@ -291,21 +296,28 @@ elif int(load_status["error_calls"]) > 0:
         },
     )
 
-latest_topic_snapshot = (
-    topic_summary.sort_values("period_end")
-    .groupby("topic", as_index=False)
+latest_group_snapshot = (
+    comparison_summary.sort_values("period_end")
+    .groupby("comparison_group", as_index=False)
     .tail(1)
-    .sort_values("news_mentions_frequency", ascending=False)
 )
+latest_group_snapshot["comparison_group"] = pd.Categorical(
+    latest_group_snapshot["comparison_group"],
+    categories=group_order,
+    ordered=True,
+)
+latest_group_snapshot = latest_group_snapshot.sort_values("comparison_group")
 
-selected_latest_row = filtered.sort_values("period_end").tail(1)
-selected_latest_mentions = numeric_metric(
-    selected_latest_row.iloc[0]["news_mentions_frequency"] if not selected_latest_row.empty else 0.0
-)
-top_topic_name = latest_topic_snapshot.iloc[0]["topic"] if not latest_topic_snapshot.empty else "n/a"
-top_topic_score = (
-    float(latest_topic_snapshot.iloc[0]["news_mentions_frequency"]) if not latest_topic_snapshot.empty else 0.0
-)
+latest_values = {
+    str(row["comparison_group"]): numeric_metric(row["news_mentions_frequency"])
+    for _, row in latest_group_snapshot.iterrows()
+}
+
+tracked_terms = [
+    item
+    for topic_name in context["topics"]["initial"]
+    for item in tracked_items["topics"][topic_name]["items"]
+]
 
 st.markdown(
     f"""
@@ -313,70 +325,50 @@ st.markdown(
         <span class="eyebrow">guardian trend explorer</span>
         <div class="hero-title">Claude versus ChatGPT</div>
         <div class="hero-copy">
-            Compare how Claude and ChatGPT are showing up in Guardian coverage while keeping Anthropic and OpenAI
-            in the same frame. Use the topic selector and time-window slider to change the lens without changing
-            the daily resolution.
+            Weekly Guardian comparison for two merged groups: Claude with Anthropic, and ChatGPT with OpenAI.
+            Use the period slider to widen or narrow the weekly comparison window.
         </div>
-        <div class="chip-row">{tracked_topic_chip_markup(topic_options)}</div>
+        <div class="chip-row">{tracked_topic_chip_markup(tracked_terms)}</div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
 metric_columns = st.columns(4)
-metric_columns[0].metric("Predefined topics", f"{len(topic_options)}")
-metric_columns[1].metric("Guardian mentions", format_metric_value(selected_latest_mentions))
-metric_columns[2].metric(
-    "Window leader",
-    top_topic_name,
-    f"{top_topic_score:.0f}" if top_topic_name != "n/a" else None,
-)
-metric_columns[3].metric("Resolution", "Daily")
+metric_columns[0].metric("Tracked terms", f"{len(tracked_terms)}")
+metric_columns[1].metric(group_order[0], format_metric_value(latest_values.get(group_order[0])))
+metric_columns[2].metric(group_order[1], format_metric_value(latest_values.get(group_order[1])))
+metric_columns[3].metric("Window", f"{window_weeks} weeks")
 
-overview_col, ranking_col = st.columns((1.3, 1))
-
-with overview_col:
-    st.subheader("Guardian comparison")
-    st.markdown(
-        '<div class="section-note">Each line shows Guardian mention counts for one predefined topic across the active window.</div>',
-        unsafe_allow_html=True,
-    )
-    topic_summary_chart = topic_summary.pivot_table(
-        index="period_end",
-        columns="topic",
-        values="news_mentions_frequency",
-        aggfunc="sum",
-    ).sort_index()
-    if topic_summary_chart.empty:
-        st.info("No topic-level Guardian history is available for the current selection yet.")
-    else:
-        st.line_chart(topic_summary_chart, height=320, width="stretch")
-
-with ranking_col:
-    st.subheader("Current ranking")
-    st.markdown(
-        '<div class="section-note">A quick read on which of the four predefined terms is strongest in the latest bucket.</div>',
-        unsafe_allow_html=True,
-    )
-    if latest_topic_snapshot.empty:
-        st.info("No current topic ranking is available for the current selection yet.")
-    else:
-        latest_scores_chart = latest_topic_snapshot[["topic", "news_mentions_frequency"]].set_index("topic")
-        st.bar_chart(latest_scores_chart, height=320, width="stretch")
-
-st.subheader("Selected topic")
+st.subheader("Weekly comparison")
 st.markdown(
-    '<div class="section-note">The selected term keeps a simple, single-source detail view: latest Guardian count, current bucket, and recent history.</div>',
+    '<div class="section-note">Each line shows the merged weekly mention count for one side of the comparison.</div>',
     unsafe_allow_html=True,
 )
 
-if selected_latest_row.empty:
-    st.info("No Guardian detail is available for the current selection yet.")
-else:
-    render_topic_detail_card(filtered, selected_latest_row.iloc[0])
+comparison_chart = comparison_summary.pivot_table(
+    index="period_end",
+    columns="comparison_group",
+    values="news_mentions_frequency",
+    aggfunc="sum",
+).sort_index()
 
-with st.expander("Tracked terms"):
-    for topic_name in context["topics"]["initial"]:
-        items = tracked_items["topics"][topic_key_for_name(topic_name)]["items"]
-        st.markdown(f"**{topic_name}**")
-        st.markdown(", ".join(f"`{item}`" for item in items))
+if comparison_chart.empty:
+    st.info("No weekly Guardian history is available for the current window yet.")
+else:
+    st.line_chart(comparison_chart, height=360, width="stretch")
+
+st.subheader("Weekly group readout")
+st.markdown(
+    '<div class="section-note">Each card shows the latest merged weekly total and recent direction for one side.</div>',
+    unsafe_allow_html=True,
+)
+
+group_columns = st.columns(2)
+for index, group_name in enumerate(group_order):
+    group_frame = comparison_summary[comparison_summary["comparison_group"] == group_name].copy()
+    with group_columns[index]:
+        if group_frame.empty:
+            st.info(f"No data is available yet for {group_name}.")
+        else:
+            render_group_card(group_frame, group_name)

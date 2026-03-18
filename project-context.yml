@@ -8,9 +8,19 @@ topics:
   predefined: true
   initial:
     - Claude
-    - ChatGPT
     - Anthropic
+    - ChatGPT
     - OpenAI
+
+comparison_groups:
+  - label: Claude + Anthropic
+    topics:
+      - Claude
+      - Anthropic
+  - label: ChatGPT + OpenAI
+    topics:
+      - ChatGPT
+      - OpenAI
 
 tracked_items:
   allowed_forms:
@@ -44,19 +54,19 @@ metrics:
 
 time:
   granularity:
-    default: daily
+    default: weekly
     allowed:
-      - daily
-  fetch_window_days: 182
-  max_fetch_window_days: 365
+      - weekly
+  fetch_window_weeks: 26
+  max_fetch_window_weeks: 52
   reload_behavior:
     on_page_load: true
     on_filter_change: true
     on_browser_refresh: true
 
 user_capabilities:
-  - topic_selection
-  - topic_comparison
+  - merged_group_comparison
+  - weekly_time_window_slider
   - current_window_visibility
 
 deployment:

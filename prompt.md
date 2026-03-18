@@ -1095,3 +1095,25 @@ The malformed list items are fixed. I’m doing one last reference sweep now for
 Removed `AI` from the tracked-topic set and reordered the remaining terms around `Claude`, `ChatGPT`, `Anthropic`, and `OpenAI`. `app.py` now opens under the headline `Claude versus ChatGPT`, and the sidebar uses a `Time window (days)` slider with a default of `182` days and a max of `365`, while keeping daily resolution fixed.
 
 I also aligned `project-context.yml`, `tracked-items.yml`, `README.md`, `spec.md`, `goals.md`, and `technology-choices.md` with the new four-term setup and slider-based window. I only did a static verification pass here; I did not run the app in this workspace.
+
+# Context from my IDE setup:
+
+## Active file: app.py
+
+## Open tabs:
+- app.py: app.py
+- tracked-items.yml: tracked-items.yml
+- README.md: README.md
+- prompt.md: prompt.md
+- project-context.yml: project-context.yml
+
+## My request for Codex:
+Make the period slider a slider that goes weekly. Merge ChatGPT and open AI. So it's one number and do the same for Claude and anthropic. Some numbers weekly.Remove the current ranking. And remove the selected topic.
+I’m logging your prompt first, then I’ll rework the dashboard into a two-series comparison: weekly window slider, weekly aggregation, merged `ChatGPT + OpenAI` versus `Claude + Anthropic`, with the topic selector, current ranking, and selected-topic section removed.
+I’ve got the shape. I’m rewriting the dashboard around two weekly comparison groups now: `Claude + Anthropic` and `ChatGPT + OpenAI`, with a weeks-based slider, no topic selector, and no ranking/detail sections.
+The weekly comparison view is in. I’m aligning the project metadata now so the repo describes the same two merged groups and weekly slider behavior the UI now implements.
+I’m in verification now. I’m checking for leftover selected-topic logic and stale daily wording, and I’ll trim any dead code that’s no longer used after the merge.
+I found one last consistency issue: the internal metadata still described topic selection and daily dataset rows. I’m tightening that now so the repo config matches the weekly two-group dashboard you asked for.
+Changed the dashboard to a weekly two-series comparison. `app.py` now uses a `Time window (weeks)` slider, aggregates at weekly granularity, merges the terms into `Claude + Anthropic` versus `ChatGPT + OpenAI`, and removes the topic selector, current ranking, and selected-topic section.
+
+I also aligned `project-context.yml`, `README.md`, `spec.md`, `goals.md`, `technology-choices.md`, and `data-dictionary.md` with the new weekly comparison model. Verification was a static sweep for leftover selected-topic/daily-window references; I did not run the app in this workspace.
