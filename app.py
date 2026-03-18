@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 
@@ -131,6 +132,10 @@ st.set_page_config(
 )
 
 LOGGER = get_logger("genai_trends")
+GROUP_COLORS = {
+    "Claude + Anthropic": "#83C9FF",
+    "ChatGPT + OpenAI": "#FF8C42",
+}
 
 
 @st.cache_data(show_spinner=False)
@@ -235,8 +240,25 @@ def render_group_card(group_frame: pd.DataFrame, label: str) -> None:
 
         history_chart = group_frame.sort_values("period_end")[["period_end", "news_mentions_frequency"]].copy()
         history_chart["period_end"] = pd.to_datetime(history_chart["period_end"])
-        history_chart = history_chart.set_index("period_end")
-        st.line_chart(history_chart, height=240, width="stretch")
+        history_chart["group_label"] = label
+        st.altair_chart(
+            alt.Chart(history_chart)
+            .mark_line(point=True, strokeWidth=3)
+            .encode(
+                x=alt.X("period_end:T", title=None),
+                y=alt.Y("news_mentions_frequency:Q", title=None),
+                color=alt.Color(
+                    "group_label:N",
+                    scale=alt.Scale(
+                        domain=list(GROUP_COLORS.keys()),
+                        range=list(GROUP_COLORS.values()),
+                    ),
+                    legend=None,
+                ),
+            ),
+            height=240,
+            use_container_width=True,
+        )
 
 
 st.markdown(APP_STYLES, unsafe_allow_html=True)
@@ -373,7 +395,29 @@ comparison_chart = comparison_summary.pivot_table(
 if comparison_chart.empty:
     st.info("No weekly Guardian history is available for the current window yet.")
 else:
-    st.line_chart(comparison_chart, height=360, width="stretch")
+    comparison_chart = comparison_chart.reset_index().melt(
+        id_vars="period_end",
+        var_name="comparison_group",
+        value_name="news_mentions_frequency",
+    )
+    st.altair_chart(
+        alt.Chart(comparison_chart)
+        .mark_line(point=True, strokeWidth=3)
+        .encode(
+            x=alt.X("period_end:T", title=None),
+            y=alt.Y("news_mentions_frequency:Q", title=None),
+            color=alt.Color(
+                "comparison_group:N",
+                scale=alt.Scale(
+                    domain=list(GROUP_COLORS.keys()),
+                    range=list(GROUP_COLORS.values()),
+                ),
+                legend=alt.Legend(title=None),
+            ),
+        ),
+        height=360,
+        use_container_width=True,
+    )
 
 st.subheader("Weekly group readout")
 st.markdown(

@@ -1139,3 +1139,21 @@ The app change is complete. I’ve verified the old fetch-window display is gone
 Changed the period control to a calendar-week range slider that starts at `2022-W40`, removed the `Current fetch window` UI, and set the default selected range to the latest `12` weeks. `app.py` now computes week-aligned start/end dates from the selected calendar-week range instead of using the old rolling week-count slider.
 
 I also aligned `project-context.yml`, `README.md`, `spec.md`, and `goals.md` with the new calendar-week behavior. Verification was a static sweep for leftover `Current fetch window` and old week-count slider references; I did not run the app in this workspace.
+
+# Context from my IDE setup:
+
+## Active file: genai_trends/data.py
+
+## Open tabs:
+- data.py: genai_trends/data.py
+- app.py: app.py
+- tracked-items.yml: tracked-items.yml
+- README.md: README.md
+- prompt.md: prompt.md
+
+## My request for Codex:
+Use the same light blue color for the Claude Plus AnThropic graph as in the first graph.
+I’m logging your prompt first, then I’ll inspect the current chart rendering in `app.py` and make the Claude + Anthropic series use the same explicit light-blue color in its detail graph as in the top comparison chart.
+I’ve got the rendering point: the lower group cards inherit Streamlit’s default series color, so I’m switching the comparison charts to explicit colors and reusing the same light blue for `Claude + Anthropic` in both places.
+The chart colors are now explicit instead of implicit. I’m doing a quick read-through to make sure both the top comparison chart and the Claude + Anthropic detail chart are using the same fixed blue mapping.
+The color mapping is confirmed in code now: `Claude + Anthropic` is pinned to the same explicit light blue in both the top comparison chart and its lower detail chart, instead of depending on Streamlit’s defaults.
