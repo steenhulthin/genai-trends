@@ -132,7 +132,7 @@ code, .mono {
 """
 
 st.set_page_config(
-    page_title="genAI Trends Dashboard",
+    page_title="Claude vs ChatGPT Dashboard",
     page_icon=":bar_chart:",
     layout="wide",
 )
@@ -222,13 +222,20 @@ context = get_context()
 tracked_items = get_tracked_items()
 
 today = date.today()
-default_start = today - timedelta(days=context["time"]["fetch_window_days"] - 1)
 
 with st.sidebar:
     st.header("Controls")
     topic_options = context["topics"]["initial"]
     selected_topic = st.selectbox("Topic", topic_options, index=0)
-    st.caption("The live fetch window is fixed to the latest 1 year.")
+    window_days = st.slider(
+        "Time window (days)",
+        min_value=30,
+        max_value=int(context["time"].get("max_fetch_window_days", 365)),
+        value=int(context["time"]["fetch_window_days"]),
+        step=1,
+    )
+    st.caption("Use the slider to compare the latest window. The default is roughly half a year.")
+    default_start = today - timedelta(days=window_days - 1)
     period_start = default_start
     period_end = today
     st.date_input(
@@ -304,10 +311,11 @@ st.markdown(
     f"""
     <div class="hero-panel">
         <span class="eyebrow">guardian trend explorer</span>
-        <div class="hero-title">{selected_topic}</div>
+        <div class="hero-title">Claude versus ChatGPT</div>
         <div class="hero-copy">
-            Track how this predefined term is showing up in Guardian coverage across the active window.
-            The simplified first version keeps the scope tight: five terms, one source, and a comparison-first view.
+            Compare how Claude and ChatGPT are showing up in Guardian coverage while keeping Anthropic and OpenAI
+            in the same frame. Use the topic selector and time-window slider to change the lens without changing
+            the daily resolution.
         </div>
         <div class="chip-row">{tracked_topic_chip_markup(topic_options)}</div>
     </div>
@@ -347,7 +355,7 @@ with overview_col:
 with ranking_col:
     st.subheader("Current ranking")
     st.markdown(
-        '<div class="section-note">A quick read on which of the five predefined terms is strongest in the latest bucket.</div>',
+        '<div class="section-note">A quick read on which of the four predefined terms is strongest in the latest bucket.</div>',
         unsafe_allow_html=True,
     )
     if latest_topic_snapshot.empty:

@@ -2,18 +2,19 @@
 
 ## Functional Requirements
 
-- The dashboard must present five predefined topics:
-  - `AI`
-  - `Anthropic`
-  - `OpenAI`
+- The dashboard must present four predefined topics:
   - `Claude`
   - `ChatGPT`
+  - `Anthropic`
+  - `OpenAI`
 - The first simplified version must treat each topic as a single tracked term.
 - The dashboard must use `Guardian Open Platform` as its only live data source.
 - The dashboard must show Guardian news-mention frequency over time for each predefined topic.
+- The dashboard headline must read `Claude versus ChatGPT`.
 - The dashboard must allow users to:
   - select one of the predefined topics
   - compare the predefined topics within the same time window
+  - adjust the time window with a slider
   - inspect the currently active fetch window
 - The primary dashboard UI must not render raw data tables as part of the normal on-screen experience.
 - The default time granularity must be daily.
@@ -22,7 +23,7 @@
 
 ## Data Model
 
-- `topic`: one of the five predefined tracked terms.
+- `topic`: one of the four predefined tracked terms.
 - `tracked item`: the same value as the topic in the first simplified version.
 - `news mention frequency`: the Guardian result count or equivalent Guardian-native count returned for one topic within one time window.
 - `time window`: the selected aggregation interval, fixed to daily in the simplified version.
@@ -58,8 +59,8 @@
 - The initial topic set is enough for the first release.
 - Agents should treat the topic list as predefined, flat, and not inferred from the data.
 - Store the concrete topic seed list in `tracked-items.yml` so it is easy to change later.
-- The initial tracked-item seed list should contain exactly the same five values as the topic list.
-- The current implementation keeps the live fetch window fixed to the latest one year.
+- The initial tracked-item seed list should contain exactly the same four values as the topic list.
+- The current implementation uses a time-window slider with a default span of roughly half a year.
 - The intended information architecture is a flat topic-first browse experience rather than a deeper topic-to-subtopic hierarchy.
 
 ## Deferred Options

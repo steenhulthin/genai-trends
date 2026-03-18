@@ -1,16 +1,4 @@
 topics:
-  AI:
-    update_mode: manual
-    items:
-      - AI
-  Anthropic:
-    update_mode: manual
-    items:
-      - Anthropic
-  OpenAI:
-    update_mode: manual
-    items:
-      - OpenAI
   Claude:
     update_mode: manual
     items:
@@ -19,6 +7,14 @@ topics:
     update_mode: manual
     items:
       - ChatGPT
+  Anthropic:
+    update_mode: manual
+    items:
+      - Anthropic
+  OpenAI:
+    update_mode: manual
+    items:
+      - OpenAI
 
 notes:
   mutable: true

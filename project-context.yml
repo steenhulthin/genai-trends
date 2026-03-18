@@ -7,11 +7,10 @@ project:
 topics:
   predefined: true
   initial:
-    - AI
-    - Anthropic
-    - OpenAI
     - Claude
     - ChatGPT
+    - Anthropic
+    - OpenAI
 
 tracked_items:
   allowed_forms:
@@ -48,7 +47,8 @@ time:
     default: daily
     allowed:
       - daily
-  fetch_window_days: 365
+  fetch_window_days: 182
+  max_fetch_window_days: 365
   reload_behavior:
     on_page_load: true
     on_filter_change: true
@@ -77,4 +77,4 @@ deployment:
     soft_prefer_client_or_static_fetching: true
 
 seed_option:
-  tracked_items: simplified_guardian_five
+  tracked_items: simplified_guardian_four

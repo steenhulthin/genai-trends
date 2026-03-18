@@ -6,18 +6,18 @@ The current implementation uses:
 
 - `Guardian Open Platform` for news mentions
 
-The app tracks exactly these five predefined topics:
+The app tracks exactly these four predefined topics:
 
-- `AI`
-- `Anthropic`
-- `OpenAI`
 - `Claude`
 - `ChatGPT`
+- `Anthropic`
+- `OpenAI`
 
 ## Current Status
 
 - Topic definitions and tracked items are config-driven.
-- The fetch window is currently fixed to the latest `1` year.
+- The dashboard headline is `Claude versus ChatGPT`.
+- The fetch window is controlled by a slider and defaults to roughly half a year.
 - The dashboard runs at fixed daily granularity.
 - The app keeps partial data visible when Guardian responses are incomplete or unavailable.
 - Runtime instrumentation is written to log files instead of being rendered in the UI.

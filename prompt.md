@@ -1073,3 +1073,25 @@ The UI cleanup is done. I’ve verified the sidebar is now topic-only, the expor
 Changed the dashboard to a fixed one-year, daily-only view. `project-context.yml` now uses `fetch_window_days: 365` with only `daily` allowed, `app.py` no longer shows a granularity selector or the exports section, and the top metrics now show `Resolution: Daily` instead of export rows.
 
 I also aligned `spec.md`, `goals.md`, `README.md`, `technology-choices.md`, and `data-dictionary.md` with the new behavior. I only did a static verification pass here; I did not run the app in this workspace.
+
+# Context from my IDE setup:
+
+## Active file: app.py
+
+## Open tabs:
+- app.py: app.py
+- tracked-items.yml: tracked-items.yml
+- README.md: README.md
+- prompt.md: prompt.md
+- project-context.yml: project-context.yml
+
+## My request for Codex:
+Exclude AI the term AI and instead make the headline of the dashboard Claude versus chat GPT. Make the time window a slider and let it default to half a year.
+I’m logging your prompt first, then I’ll update the tracked terms, change the dashboard hero to the new Claude-versus-ChatGPT framing, and replace the fixed one-year window with a slider that defaults to roughly half a year.
+I have enough context now. The concrete shape is: four tracked terms, a configurable slider-driven window with a six-month default, and a dashboard frame that explicitly leads with Claude versus ChatGPT while still letting the user inspect the remaining tracked terms.
+The main implementation change is in. I’m checking the touched files now for syntax issues and markdown damage from the multi-file patch, especially the topic lists in the spec docs.
+The core behavior is right, but the doc patch introduced malformed bullets and left a couple of “five-term” phrases behind. I’m fixing those now so the repo text matches the new four-term setup cleanly.
+The malformed list items are fixed. I’m doing one last reference sweep now for leftover four-versus-five drift and any remaining explicit `AI` topic mentions in the tracked-topic docs.
+Removed `AI` from the tracked-topic set and reordered the remaining terms around `Claude`, `ChatGPT`, `Anthropic`, and `OpenAI`. `app.py` now opens under the headline `Claude versus ChatGPT`, and the sidebar uses a `Time window (days)` slider with a default of `182` days and a max of `365`, while keeping daily resolution fixed.
+
+I also aligned `project-context.yml`, `tracked-items.yml`, `README.md`, `spec.md`, `goals.md`, and `technology-choices.md` with the new four-term setup and slider-based window. I only did a static verification pass here; I did not run the app in this workspace.

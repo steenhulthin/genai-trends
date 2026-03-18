@@ -10,11 +10,10 @@
 - A cross-source composite score is not required in the simplified Guardian-only version.
 - The initial tracked-item seed list should live in `tracked-items.yml`.
 - The initial tracked-item seed list should contain exactly:
-  - `AI`
-  - `Anthropic`
-  - `OpenAI`
   - `Claude`
   - `ChatGPT`
+  - `Anthropic`
+  - `OpenAI`
 - The primary UI should present information with charts, cards, and structured lists rather than on-screen data tables.
 - The primary UI does not expose export or download controls in the simplified version.
 - The visual direction should be cheerful, nerdy, and welcoming to software developers.
@@ -44,4 +43,4 @@
 
 ## Seed Topic Option
 
-- Use the simplified five-term Guardian-only set for the first implementation.
+- Use the simplified four-term Guardian-only set for the first implementation.
