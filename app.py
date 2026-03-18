@@ -285,6 +285,10 @@ with st.sidebar:
         format_func=week_label,
     )
     st.caption("The comparison runs in calendar-week buckets starting at 2022-W40. The default selection is the last 12 weeks.")
+    st.markdown("**Data source**")
+    st.caption(
+        "Counts come from Guardian Open Platform article search results. Each weekly value is the number of matching Guardian articles for the tracked terms in that calendar week."
+    )
     period_start = selected_week_range[0]
     period_end = min(today, selected_week_range[1] + timedelta(days=6))
 
@@ -385,6 +389,11 @@ metric_columns[1].metric(group_order[0], format_metric_value(latest_values.get(g
 metric_columns[2].metric(group_order[1], format_metric_value(latest_values.get(group_order[1])))
 metric_columns[3].metric("Window", f"{selected_week_count} weeks")
 
+st.markdown(
+    '<div class="section-note">This dashboard compares weekly Guardian mention volume for two merged groups: Claude with Anthropic, and ChatGPT with OpenAI. The top chart shows the side-by-side time series, and the cards below show the latest weekly totals and short-term movement.</div>',
+    unsafe_allow_html=True,
+)
+
 st.subheader("Weekly comparison")
 st.markdown(
     '<div class="section-note">Each line shows the merged weekly mention count for one side of the comparison.</div>',
@@ -439,6 +448,7 @@ for index, group_name in enumerate(group_order):
             st.info(f"No data is available yet for {group_name}.")
         else:
             render_group_card(group_frame, group_name)
+
 
 
 

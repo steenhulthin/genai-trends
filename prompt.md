@@ -1245,3 +1245,21 @@ For `use_container_width=True`, use `width='stretch'`. For `use_container_width=
 Removed the cache-only banner from the app, so the UI now only shows the mixed cache-plus-live notice when a live tail refresh is actually being used. I also replaced both `use_container_width=True` calls in `app.py` with `width="stretch"` to match the Streamlit deprecation guidance.
 
 For cleanup, I removed dead helper functions and an unused import from `genai_trends/data.py` that were left over from earlier dashboard iterations. I only did static verification here; I did not run the app in this workspace.
+# Context from my IDE setup:
+
+## Active file: README.md
+
+## Active selection of the file:
+dashboard for tracking Guardian news-mention signals around a small set of predefined generati
+## Open tabs:
+- README.md: README.md
+- data.py: genai_trends/data.py
+- prompt.md: prompt.md
+- app.py: app.py
+- guardian_prefetch_weekly.csv: data/guardian_prefetch_weekly.csv
+
+## My request for Codex:
+Add a description of the data source under the controls in the sidebar. Also add a small description on what is on the dashboard.
+Added both UI descriptions in `app.py`. The sidebar now includes a `Data source` note under the controls explaining that the weekly counts come from Guardian Open Platform article search results. The main dashboard now also has a short description below the top metrics explaining that the page compares weekly Guardian mention volume for the two merged groups, with the chart showing the time series and the cards showing latest totals and recent movement.
+
+I only did a static verification pass here.
