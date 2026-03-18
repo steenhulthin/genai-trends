@@ -57,6 +57,21 @@ You can start from:
 streamlit run app.py
 ```
 
+## Prefetch Historical Data
+
+To save the full configured Guardian history into the repo-local `data/` folder for later fallback use, run:
+
+```bash
+python prefetch_data.py
+```
+
+This writes:
+
+- `data/guardian_prefetch_weekly.csv`
+- `data/guardian_prefetch_weekly.metadata.json`
+
+The export covers the whole configured calendar-week period, starting at `2022-W40` and ending on the day you run the command.
+
 ## Logging
 
 The app writes runtime logs to:
@@ -86,3 +101,4 @@ Main project files:
 - Live data quality depends on external provider behavior and provider limits.
 - `Guardian Open Platform` is used for simplicity; `GDELT Web NGrams 3.0` remains a later option for higher-scale news ingestion.
 - The current implementation still fetches on page load rather than using a scheduled ingestion pipeline.
+

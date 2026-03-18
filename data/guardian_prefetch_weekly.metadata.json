@@ -1,0 +1,26 @@
+{
+  "generated_at_utc": "2026-03-18T10:41:08.598703+00:00",
+  "provider": "guardian",
+  "granularity": "weekly",
+  "period_start": "2022-10-03",
+  "period_end": "2026-03-18",
+  "row_count": 724,
+  "tracked_terms": [
+    "Anthropic",
+    "ChatGPT",
+    "Claude",
+    "OpenAI"
+  ],
+  "files": {
+    "dataset": "guardian_prefetch_weekly.csv",
+    "metadata": "guardian_prefetch_weekly.metadata.json"
+  },
+  "load_status": {
+    "total_duration_ms": 30180.5,
+    "api_calls": 4,
+    "throttled_calls": 0,
+    "partial_calls": 0,
+    "error_calls": 0,
+    "partial_rows": 0
+  }
+}

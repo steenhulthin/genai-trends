@@ -1200,3 +1200,6 @@ In this repo, I would put the cache read/write layer next to `genai_trends/data.
 
 ## My request for Codex:
 Let's do this. Make code that saves the data from the whole period to a file and put it in a data folder.I'll run the code and save the data, actually.Then in the next iteration you can use that data as a fallback.
+Implemented a separate historical prefetch path without changing the live dashboard fetch flow. `genai_trends/prefetch.py` now computes the full configured period starting at `2022-W40`, fetches the weekly Guardian dataset, and writes both `data/guardian_prefetch_weekly.csv` and `data/guardian_prefetch_weekly.metadata.json`. `prefetch_data.py` is the runner you can execute, and `README.md` now documents the command.
+
+Run `python prefetch_data.py` in the repo. I could only do static verification here: the new files read back correctly, but I could not run a compile or smoke test because the Python launcher in this workspace is not executable.
