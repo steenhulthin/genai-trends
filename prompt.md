@@ -978,3 +978,27 @@ I found a couple of edge cases in the new layout. I’m adding empty-state guard
 Implemented the hierarchy-first UI in `app.py`. The dashboard now opens with a styled topic hero, visible tracked-item chips under the selected topic, chart-based summaries, source readout cards, and per-item detail cards instead of on-screen tables. CSV and data dictionary downloads are still there, but the raw dataframe views are gone.
 
 I only did a static verification pass here. I confirmed the table widgets were removed from the UI code and added empty-state guards for charts and item cards, but I could not run the app in this workspace because there is still no runnable Python interpreter exposed.
+
+# Context from my IDE setup:
+
+## Active file: app.py
+
+## Open tabs:
+- app.py: app.py
+- technology-choices.md: technology-choices.md
+- spec.md: spec.md
+- prompt.md: prompt.md
+- goals.md: goals.md
+
+## My request for Codex:
+The dashboard has to be simplified. Only use Guardian open platform. So don't do not use Mastodon or Hacker News anymore. Also simplify the topics. Now instead only have the following five words: AI,  Anthropic, OpenAI, Claude and ChatGPT. Update the relevant specification files.
+I’m updating the repo instructions transcript first, then I’ll inspect the spec files and make the simplification changes across the relevant docs.
+I’ve confirmed the prior spec and implementation history in the repo log. Next I’m checking which specification files mention sources and topic lists so I can update them consistently.
+I’ve identified the current spec drift: the docs still describe a three-source model and the older topic taxonomy. I’m updating the specification set now so it consistently describes Guardian-only inputs and the new five-topic vocabulary.
+I’ve narrowed the remaining scope. The spec change is not just provider names; the product shape becomes flatter too, because a five-word Guardian-only dashboard no longer needs the older multi-source hierarchy model.
+I’m editing the documentation set now. The updates are confined to the product/spec docs so the written requirements move to Guardian-only and a flat five-term scope without touching runtime code in this pass.
+The doc rewrite is in. I’m doing a consistency pass now to make sure the three spec documents all say the same thing about provider scope, topic scope, and whether composite scoring still exists.
+The spec documents are internally aligned now. I also hit one environment detail during verification: there isn’t a Git worktree here, so I verified by direct file reads instead of `git diff`.
+Updated `spec.md`, `goals.md`, and `technology-choices.md` to match the simplified scope: `Guardian Open Platform` is now the only live source, the topic set is now exactly `AI`, `Anthropic`, `OpenAI`, `Claude`, and `ChatGPT`, and the docs now describe a flat Guardian-only dashboard instead of the earlier multi-source hierarchy.
+
+I also removed the requirement for multi-source composite scoring from the spec docs and replaced it with Guardian news-mention frequency as the primary metric. Verification was a direct read-through of the three updated files plus a stale-term search; I did not change runtime config or app code in this pass.
